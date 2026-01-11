@@ -3,7 +3,7 @@
 
 module axis_ascon_aead128_tb;
 
-parameter debug_trace = 1;
+parameter debug_trace = 0;
 
 initial begin
     if (debug_trace) begin
@@ -16,8 +16,8 @@ reg clk = 1;
 initial forever #1 clk = !clk;
 
 initial begin
-	#1000
-	$finish;
+	// #1000
+	// $finish;
 end
 
 parameter rounds_per_clk     = 8;
@@ -207,7 +207,7 @@ function [15:0] make_valid_keep(input [15:0] keep);
 	integer i;
 	begin
 		found = 0;
-		make_valid_keep = 0;
+		make_valid_keep = 1;
 		for (i = 0; i < 16; i = i + 1) begin
 			if (!found) begin
 				if (keep[15-i]) begin
@@ -363,14 +363,6 @@ end
 
 wire error_sig = dec_m_tag_tvalid && dec_m_tag_tdata != 0;
 
-always @(posedge clk) begin
-	if (dec_m_tag_tvalid && dec_m_tag_tready && dec_m_tag_tdata == 0) begin
-		// display something, so we know the testbench is making
-		// forward progress
-		$display("Verified TAG successfully! :D");
-	end
-end
-
 ////////////////////////////////////////////////////////////////////////////////
 // cover
 
@@ -381,59 +373,78 @@ always @(posedge clk) begin
 	end
 end
 
+reg [31:0] tag_errors = 0;
+
+always @(posedge clk) begin
+	if (dec_m_tag_tvalid && dec_m_tag_tready) begin
+		if (dec_m_tag_tdata == 0) begin
+			// display something, so we know the testbench is making
+			// forward progress
+			$display("Nr. %d: Verified TAG successfully! :D", tags_received);
+		end else begin
+			tag_errors <= tag_errors + 1;
+		end
+	end
+end
+
 final begin
 	$display("Verified %d tags. No ERRORS above? -> ALL GOOD :D", tags_received);
+	$display("There were %d ERRORS in total.", tag_errors);
 end
 
 ////////////////////////////////////////////////////////////////////////////////
 // record io data
 
-integer s_fp;
-initial s_fp = $fopen("s_plaintext.txt", "w");
+generate if (debug_trace) begin : dump_io_data
 
-always @(posedge clk) begin
-	if (enc_s_tvalid && enc_s_tready) begin
-		$fwrite(s_fp, "%016x %016b\n", enc_s_tdata, enc_s_tkeep);
-		if (enc_s_tlast) begin
-			$fwrite(s_fp, "LAST\n");
+	integer s_fp;
+	initial s_fp = $fopen("s_plaintext.txt", "w");
+
+	always @(posedge clk) begin
+		if (enc_s_tvalid && enc_s_tready) begin
+			$fwrite(s_fp, "%016x %016b\n", enc_s_tdata, enc_s_tkeep);
+			if (enc_s_tlast) begin
+				$fwrite(s_fp, "LAST\n");
+			end
 		end
 	end
-end
 
-integer m_fp;
-initial m_fp = $fopen("m_plaintext.txt", "w");
+	integer m_fp;
+	initial m_fp = $fopen("m_plaintext.txt", "w");
 
-always @(posedge clk) begin
-	if (dec_m_tvalid && dec_m_tready) begin
-		$fwrite(m_fp, "%016x %016b\n", dec_m_tdata, dec_m_tkeep);
-		if (dec_m_tlast) begin
-			$fwrite(m_fp, "LAST\n");
+	always @(posedge clk) begin
+		if (dec_m_tvalid && dec_m_tready) begin
+			$fwrite(m_fp, "%016x %016b\n", dec_m_tdata, dec_m_tkeep);
+			if (dec_m_tlast) begin
+				$fwrite(m_fp, "LAST\n");
+			end
 		end
 	end
-end
 
-integer s_ad_fp;
-initial s_ad_fp = $fopen("s_ad.txt", "w");
+	integer s_ad_fp;
+	initial s_ad_fp = $fopen("s_ad.txt", "w");
 
-always @(posedge clk) begin
-	if (enc_s_ad_tvalid && enc_s_ad_tready) begin
-		$fwrite(s_ad_fp, "%016x %016b\n", enc_s_ad_tdata, enc_s_ad_tkeep);
-		if (enc_s_ad_tlast) begin
-			$fwrite(s_ad_fp, "LAST\n");
+	always @(posedge clk) begin
+		if (enc_s_ad_tvalid && enc_s_ad_tready) begin
+			$fwrite(s_ad_fp, "%016x %016b\n", enc_s_ad_tdata, enc_s_ad_tkeep);
+			if (enc_s_ad_tlast) begin
+				$fwrite(s_ad_fp, "LAST\n");
+			end
 		end
 	end
-end
 
-integer m_ad_fp;
-initial m_ad_fp = $fopen("m_ad.txt", "w");
+	integer m_ad_fp;
+	initial m_ad_fp = $fopen("m_ad.txt", "w");
 
-always @(posedge clk) begin
-	if (dec_m_ad_tvalid && dec_m_ad_tready) begin
-		$fwrite(m_ad_fp, "%016x %016b\n", dec_m_ad_tdata, dec_m_ad_tkeep);
-		if (dec_m_ad_tlast) begin
-			$fwrite(m_ad_fp, "LAST\n");
+	always @(posedge clk) begin
+		if (dec_m_ad_tvalid && dec_m_ad_tready) begin
+			$fwrite(m_ad_fp, "%016x %016b\n", dec_m_ad_tdata, dec_m_ad_tkeep);
+			if (dec_m_ad_tlast) begin
+				$fwrite(m_ad_fp, "LAST\n");
+			end
 		end
 	end
-end
+
+end endgenerate
 
 endmodule
