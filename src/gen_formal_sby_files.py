@@ -27,6 +27,7 @@ chparam -set rounds_per_clk 16 ascon_aead128
 chparam -set l2_bw 3 ascon_aead128
 chparam -set formal_enc_decn %d ascon_aead128
 chparam -set formal_testcase %d ascon_aead128
+chparam -set formal_testcases_enabled 1 ascon_aead128
 
 prep -top ascon_aead128
 

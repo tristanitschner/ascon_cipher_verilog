@@ -121,11 +121,12 @@ is zero in case of a successful tag match, and has any other value otherwise.
 User logic needs to do the buffering and make sure not to forward such a
 packet.
 
-(IMPORTANT NOTE: The stream interfaces may not be AXIS compliant, i.e. it is
-possible that there are combinational paths between the input tready on the
-output side and the corresponding tvalid on the output side, and vice versa on
-the input side. In this case, adding the isolators will fix the issue and make
-the core compliant.)
+(IMPORTANT NOTE: Unless the input isolator is activated, this core is not
+compliant with the AXIS specification on the input streams, because the core
+will only raise its READY signals, if a VALID signal is provided (except for
+the command stream). This is due to the inner working of the base engine and
+cannot be changed due to input / output stream interlock. This might be an
+issue, so remember this if you use the core in a larger design.)
 
 Verification Strategies
 -----------------------

@@ -120,7 +120,7 @@ def print_comment(string):
 
 def gen_generate_header(i, s_enc_decn):
     template = """
-generate if (formal_testcase == %d && formal_enc_decn == %d) begin : gen_formal_testcase%d_%s
+generate if (formal_testcase == %d && formal_enc_decn == %d && formal_testcases_enabled != 0) begin : gen_formal_testcase%d_%s
 """
     print(template % (i, 1 if s_enc_decn else 0, i, "enc" if s_enc_decn else "dec"))
 

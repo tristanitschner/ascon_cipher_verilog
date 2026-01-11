@@ -39,8 +39,9 @@ module ascon_aead128 #(
 	parameter rounds_per_clk = 1,
 	parameter l2_bw          = 7,
 `ifdef FORMAL
-	parameter formal_testcase = 500,
-	parameter formal_enc_decn = 1,
+	parameter formal_testcase          = 500,
+	parameter formal_enc_decn          = 1,
+	parameter formal_testcases_enabled = 0,
 `endif /* FORMAL */
 	localparam bw = 1 << l2_bw,
 	localparam kw = 128/bw
@@ -179,9 +180,11 @@ assign m_keep = core_m_keep_swapped;
 
 `ifdef FORMAL
 
-	always @(posedge clk) begin
-		assert(l2_bw == 3); // a byte must be 8 bits for our formal testcases
-	end
+	generate if (formal_testcases_enabled != 0) begin
+		always @(posedge clk) begin
+			assert(l2_bw == 3); // a byte must be 8 bits for our formal testcases
+		end
+	end endgenerate
 
 	always @(posedge clk) begin
 		if (m_valid) begin
@@ -189,6 +192,12 @@ assign m_keep = core_m_keep_swapped;
 			if (m_t) begin
 				assert(m_keep == {kw{1'b1}});
 			end
+		end
+	end
+
+	always @(posedge clk) begin
+		if (m_valid && m_t) begin
+			assert(m_last);
 		end
 	end
 
@@ -254,7 +263,11 @@ assign m_keep = core_m_keep_swapped;
 		cover(m_valid && m_ready && m_last && m_t);
 	end
 
-`endif /* FORMAL */
+	// AXI compliance
+	always @(posedge clk) begin
+		cover(m_valid && !m_ready);
+	end
 
+`endif /* FORMAL */
 
 endmodule

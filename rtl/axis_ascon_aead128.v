@@ -350,4 +350,94 @@ assign i_m_ready =
 	i_m_p  ?    m_tready    :
      /* i_m_t  ? */ m_tag_tready;
 
+////////////////////////////////////////////////////////////////////////////////
+
+`ifdef FORMAL
+
+	// Note: isolators must be disabled for our checks, since they cannot
+	// deal with buffering
+
+	reg [31:0] commands_in = 0;
+	always @(posedge clk) begin
+		if (s_cmd_tvalid && s_cmd_tready) begin
+			commands_in <= commands_in + 1;
+		end
+	end
+
+	reg [31:0] ad_packets_declared = 0;
+	always @(posedge clk) begin
+		if (s_cmd_tvalid && s_cmd_tready && s_cmd_ad) begin
+			ad_packets_declared <= ad_packets_declared + 1;
+		end
+	end
+
+	reg [31:0] p_packets_declared = 0;
+	always @(posedge clk) begin
+		if (s_cmd_tvalid && s_cmd_tready && s_cmd_p) begin
+			p_packets_declared <= p_packets_declared + 1;
+		end
+	end
+
+	reg [31:0] tag_packets_declared = 0;
+	always @(posedge clk) begin
+		if (s_cmd_tvalid && s_cmd_tready && (s_cmd_enc_decn == 0)) begin
+			tag_packets_declared <= tag_packets_declared + 1;
+		end
+	end
+
+	reg [31:0] ad_packets_in = 0;
+	always @(posedge clk) begin
+		if (s_ad_tvalid && s_ad_tready && s_ad_tlast) begin
+			ad_packets_in <= ad_packets_in + 1;
+		end
+	end
+
+	reg [31:0] data_packets_in = 0;
+	always @(posedge clk) begin
+		if (s_tvalid && s_tready && s_tlast) begin
+			data_packets_in <= data_packets_in + 1;
+		end
+	end
+
+	reg [31:0] tags_in = 0;
+	always @(posedge clk) begin
+		if (s_tag_tvalid && s_tag_tready) begin
+			tags_in <= tags_in + 1;
+		end
+	end
+
+	reg [31:0] ad_packets_out = 0;
+	always @(posedge clk) begin
+		if (m_ad_tvalid && m_ad_tready && m_ad_tlast) begin
+			ad_packets_out <= ad_packets_out + 1;
+		end
+	end
+
+	reg [31:0] data_packets_out = 0;
+	always @(posedge clk) begin
+		if (m_tvalid && m_tready && m_tlast) begin
+			data_packets_out <= data_packets_out + 1;
+		end
+	end
+
+	reg [31:0] tags_out = 0;
+	always @(posedge clk) begin
+		if (m_tag_tvalid && m_tag_tready) begin
+			tags_out <= tags_out + 1;
+		end
+	end
+
+	always @(posedge clk) begin
+		if (s_cmd_tready) begin
+			assert(commands_in     == tags_out);
+			assert(ad_packets_in   == ad_packets_out);
+			assert(data_packets_in == data_packets_out);
+			assert(tags_in         == tag_packets_declared);
+			assert(ad_packets_in   == ad_packets_declared);
+			assert(data_packets_in == p_packets_declared);
+		end
+	end
+
+`endif /* FORMAL */
+
 endmodule
