@@ -113,7 +113,7 @@ wire [kw-1:0] pad_m_keep_swapped;
 generate if (kw == 1) begin : gen_pad_m_keep_kw1
 	assign pad_m_keep_swapped  = pad_m_keep;
 end else begin : gen_pad_m_keep_kw_other
-	assign pad_m_keep_swapped = {pad_m_keep [kw-1-:kw/2], pad_m_keep [kw/2-1-:kw/2]};
+	assign pad_m_keep_swapped = {pad_m_keep [kw/2-1-:kw/2], pad_m_keep [kw-1-:kw/2]};
 end endgenerate
 wire [127:0] pad_m_key_swapped   = {pad_m_key   [63:0], pad_m_key   [127:64]};
 wire [127:0] pad_m_nonce_swapped = {pad_m_nonce [63:0], pad_m_nonce [127:64]};
@@ -154,7 +154,7 @@ wire [kw-1:0] core_m_keep_swapped;
 generate if (kw == 1) begin : gen_m_keep_kw1
 	assign core_m_keep_swapped = core_m_keep;
 end else begin : gen_m_keep_kw_other
-	assign core_m_keep_swapped = {core_m_keep [kw-1-:kw/2], core_m_keep [kw/2-1-:kw/2]};
+	assign core_m_keep_swapped = {core_m_keep [kw/2-1-:kw/2], core_m_keep [kw-1-:kw/2]};
 end endgenerate
 
 function [127:0] mask_data(input [127:0] data, input [kw-1:0] keep);

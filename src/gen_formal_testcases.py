@@ -230,7 +230,7 @@ def gen_last_assumptions(test, enc_decn):
     always @(posedge clk) begin
 """
     template = """
-    assume(s_last == (s_counter == %d || s_counter == %d));
+    assume(s_last == (s_counter == %d || s_counter == %d || s_counter == %d));
 """
     template_end = """
     end
@@ -241,12 +241,12 @@ def gen_last_assumptions(test, enc_decn):
     c_len  = len(test["c_words"])
     # TODO: can this be refactored? after all c_len should always == p_len
     if enc_decn:
-        print(template % (ad_len, ad_len + p_len)) # Note missing -1 for first word
+        print(template % (0, ad_len, ad_len + p_len)) # Note missing -1 for first word
         print(template_end)
         print(template_t_s_last % (ad_len + p_len))
         print(template_t_m_last % (ad_len + p_len))
     else:
-        print(template % (ad_len, ad_len + c_len + 1)) # +1 for tag
+        print(template % (ad_len, ad_len + c_len, ad_len + c_len + 1)) # +1 for tag
         print(template_end)
         print(template_t_s_last % (ad_len + c_len + 1))
         print(template_t_m_last % (ad_len + c_len))

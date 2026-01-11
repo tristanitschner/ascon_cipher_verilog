@@ -215,7 +215,24 @@ wire [319:0] ap_m_data_ds = r_ds ? {ap_m_data_second_key[319:64], sep_word} : ap
 
 wire [319:0] ap_m_data_xored = ap_m_data_ds ^ ({192'b0, s_data} << 192);
 
-wire [319:0] ap_m_data_xored2 = (r_enc_decn || (!r_enc_decn && s_last)) ? ap_m_data_xored : {s_data, ap_m_data_xored[191:0]};
+// I don't know what to name this function...
+function [127:0] mask_data(input [127:0] data, input [127:0] other_data, input [kw-1:0] keep);
+	integer i;
+	begin
+		mask_data = 0;
+		for (i = 0; i < kw; i = i + 1) begin
+			if (keep[i]) begin
+				mask_data[bw*(i+1)-1-:bw] = data[bw*(i+1)-1-:bw];
+			end else begin
+				mask_data[bw*(i+1)-1-:bw] = other_data[bw*(i+1)-1-:bw];
+			end
+		end
+	end
+endfunction
+
+wire [127:0] s_data_filled_in = mask_data(s_data, ap_m_data_xored[319:192], s_keep);
+
+wire [319:0] ap_m_data_xored2 = r_enc_decn ? ap_m_data_xored : (!r_enc_decn && s_last) ? {s_data_filled_in, ap_m_data_xored[191:0]} : {s_data, ap_m_data_xored[191:0]};
 
 reg [319:0] c_ap_s_data; /* wire */
 always @(*) begin
