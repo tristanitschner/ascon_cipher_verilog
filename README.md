@@ -121,6 +121,12 @@ is zero in case of a successful tag match, and has any other value otherwise.
 User logic needs to do the buffering and make sure not to forward such a
 packet.
 
+(IMPORTANT NOTE: The stream interfaces may not be AXIS compliant, i.e. it is
+possible that there are combinational paths between the input tready on the
+output side and the corresponding tvalid on the output side, and vice versa on
+the input side. In this case, adding the isolators will fix the issue and make
+the core compliant.)
+
 Verification Strategies
 -----------------------
 
