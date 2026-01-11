@@ -266,15 +266,10 @@ maintain a list here and put you on it!
 FAQ
 ---
 
-* Will this ever support the CAESAR HARDWARE API?
+* Do I plan on supporting the CEASAR HARDWARE API?
 
-No, I've looked at it, and that API requires specifying the length of the input
-associated data and plaintext data in advance, though the input may be
-fragmented to the local buffer size. This really is a bummer. If I receive some
-packet, I do not know its length, so I have to buffer it to determine its
-length. Doing so will require the integration of a FIFO, which is not
-necessary, as this design demonstrates. We will definitely stay on the
-area-efficient side!
+No. Using that API, it is quite hard to design a core that is robust and
+doesn't lock up on invalid input. But that's just my opinion.
 
 Acknowledgements
 ----------------
