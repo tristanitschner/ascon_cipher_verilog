@@ -36,8 +36,8 @@
 `timescale 1 ns / 1 ps
 
 module ascon_aead128 #(
-	parameter rounds_per_clk = 4,
-	parameter l2_bw          = 3,
+	parameter rounds_per_clk = 1,
+	parameter l2_bw          = 7,
 `ifdef FORMAL
 	parameter formal_testcase = 500,
 	parameter formal_enc_decn = 1,
@@ -72,6 +72,7 @@ module ascon_aead128 #(
 wire          pad_m_valid;
 wire          pad_m_ready;
 wire          pad_m_last;
+wire          pad_m_last_orig;
 wire          pad_m_enc_decn;
 wire [127:0]  pad_m_data;
 wire [kw-1:0] pad_m_keep;
@@ -83,27 +84,28 @@ wire          pad_m_p;
 ascon_pad #( 
 	.l2_bw (l2_bw)
 ) ascon_pad_inst (
-	.clk        (clk),
-	.s_valid    (s_valid),
-	.s_ready    (s_ready),
-	.s_last     (s_last),
-	.s_enc_decn (s_enc_decn),
-	.s_data     (s_data),
-	.s_keep     (s_keep),
-	.s_key      (s_key),
-	.s_nonce    (s_nonce),
-	.s_ad       (s_ad),
-	.s_p        (s_p),
-	.m_valid    (pad_m_valid),
-	.m_ready    (pad_m_ready),
-	.m_last     (pad_m_last),
-	.m_enc_decn (pad_m_enc_decn),
-	.m_data     (pad_m_data),
-	.m_keep     (pad_m_keep),
-	.m_key      (pad_m_key),
-	.m_nonce    (pad_m_nonce),
-	.m_ad       (pad_m_ad),
-	.m_p        (pad_m_p)
+	.clk         (clk),
+	.s_valid     (s_valid),
+	.s_ready     (s_ready),
+	.s_last      (s_last),
+	.s_enc_decn  (s_enc_decn),
+	.s_data      (s_data),
+	.s_keep      (s_keep),
+	.s_key       (s_key),
+	.s_nonce     (s_nonce),
+	.s_ad        (s_ad),
+	.s_p         (s_p),
+	.m_valid     (pad_m_valid),
+	.m_ready     (pad_m_ready),
+	.m_last      (pad_m_last),
+	.m_last_orig (pad_m_last_orig),
+	.m_enc_decn  (pad_m_enc_decn),
+	.m_data      (pad_m_data),
+	.m_keep      (pad_m_keep),
+	.m_key       (pad_m_key),
+	.m_nonce     (pad_m_nonce),
+	.m_ad        (pad_m_ad),
+	.m_p         (pad_m_p)
 );
 
 // swap to my mixed endianess
@@ -125,26 +127,27 @@ ascon_aead128_core #(
 	.rounds_per_clk (rounds_per_clk),
 	.l2_bw          (l2_bw)
 ) ascon_aead128_core_inst (
-	.clk        (clk),
-	.s_valid    (pad_m_valid),
-	.s_ready    (pad_m_ready),
-	.s_last     (pad_m_last),
-	.s_enc_decn (pad_m_enc_decn),
-	.s_data     (pad_m_data_swapped),
-	.s_keep     (pad_m_keep_swapped),
-	.s_key      (pad_m_key_swapped),
-	.s_nonce    (pad_m_nonce_swapped),
-	.s_ad       (pad_m_ad),
-	.s_p        (pad_m_p),
-	.m_valid    (m_valid),
-	.m_ready    (m_ready),
-	.m_last     (m_last),
-	.m_enc_decn (m_enc_decn),
-	.m_data     (core_m_data),
-	.m_keep     (core_m_keep),
-	.m_ad       (m_ad),
-	.m_p        (m_p),
-	.m_t        (m_t)
+	.clk         (clk),
+	.s_valid     (pad_m_valid),
+	.s_ready     (pad_m_ready),
+	.s_last      (pad_m_last),
+	.s_last_orig (pad_m_last_orig),
+	.s_enc_decn  (pad_m_enc_decn),
+	.s_data      (pad_m_data_swapped),
+	.s_keep      (pad_m_keep_swapped),
+	.s_key       (pad_m_key_swapped),
+	.s_nonce     (pad_m_nonce_swapped),
+	.s_ad        (pad_m_ad),
+	.s_p         (pad_m_p),
+	.m_valid     (m_valid),
+	.m_ready     (m_ready),
+	.m_last      (m_last),
+	.m_enc_decn  (m_enc_decn),
+	.m_data      (core_m_data),
+	.m_keep      (core_m_keep),
+	.m_ad        (m_ad),
+	.m_p         (m_p),
+	.m_t         (m_t)
 );
 
 // swap back

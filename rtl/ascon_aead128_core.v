@@ -71,6 +71,7 @@ module ascon_aead128_core #(
 	input  wire          s_valid,
 	output wire          s_ready,
 	input  wire          s_last,
+	input  wire          s_last_orig,
 	input  wire          s_enc_decn,
 	input  wire [127:0]  s_data,
 	input  wire [kw-1:0] s_keep,
@@ -277,19 +278,20 @@ assign ap_s_rnd = c_ap_s_rnd;
 wire stall = m_valid && !m_ready;
 
 wire skip_empty = !(|(s_keep)) && s_valid && (r_ad || r_p);
+// wire skip_empty = 0;
 
 assign ap_s_valid = s_valid && !stall && !r_final;
-assign ap_m_ready = r_final ? m_ready : ((m_ready && m_valid) || skip_empty);
+assign ap_m_ready = r_final ? (r_enc_decn ? m_ready : (m_ready && s_valid)) : ((m_ready && m_valid) || skip_empty);
 assign s_ready = (r_first || (!stall && (r_enc_decn ? !r_final : 1))) && ap_s_ready;
 assign m_valid = r_final ? (r_enc_decn ? ap_m_valid : (ap_m_valid && s_valid)) 
-			 : (ap_m_valid && s_valid && m_ready && !skip_empty) && !r_first;
+			 : (ap_m_valid && s_valid && !skip_empty) && !r_first;
 
 wire [127:0] data_out = ap_m_data[127:0] ^ r_key;
 
 assign m_data = r_final ? (r_enc_decn ? data_out : (data_out ^ s_data)) 
 			: r_ad ? s_data : ap_m_data[319:192] ^ s_data;
 assign m_keep = r_final ? {kw{1'b1}} : s_keep;
-assign m_last = r_final || s_last;
+assign m_last = r_final || s_last_orig;
 
 ////////////////////////////////////////////////////////////////////////////////
 // the output sideband signals

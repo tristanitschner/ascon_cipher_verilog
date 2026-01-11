@@ -21,7 +21,9 @@ module formal_fifo #(
 
 localparam depth = 1 << aw;
 
+integer i;
 reg [dw-1:0] mem [0:depth-1];
+initial for (i = 0; i < depth; i = i + 1) mem[i] = 0;
 
 reg [aw:0] wptr = 0;
 reg [aw:0] rptr = 0;
