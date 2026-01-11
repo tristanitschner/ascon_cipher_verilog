@@ -1,0 +1,257 @@
+// BSD 4-Clause License
+// 
+// Copyright (c) 2026, Tristan Itschner
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+// 
+// 1. Redistributions of source code must retain the above copyright notice, this
+//    list of conditions and the following disclaimer.
+// 
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//    this list of conditions and the following disclaimer in the documentation
+//    and/or other materials provided with the distribution.
+// 
+// 3. All advertising materials mentioning features or use of this software must
+//    display the following acknowledgement:
+//      This product includes software developed by Tristan Itschner.
+// 
+// 4. Neither the name of the copyright holder nor the names of its
+//    contributors may be used to endorse or promote products derived from
+//    this software without specific prior written permission.
+// 
+// THIS SOFTWARE IS PROVIDED BY COPYRIGHT HOLDER "AS IS" AND ANY EXPRESS OR
+// IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+// EVENT SHALL COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+// OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+// OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+// ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+`default_nettype none
+`timescale 1 ns / 1 ps
+
+module ascon_aead128 #(
+	parameter rounds_per_clk = 4,
+	parameter l2_bw          = 3,
+`ifdef FORMAL
+	parameter formal_testcase = 500,
+	parameter formal_enc_decn = 1,
+`endif /* FORMAL */
+	localparam bw = 1 << l2_bw,
+	localparam kw = 128/bw
+) (
+	input wire clk,
+
+	input  wire          s_valid,
+	output wire          s_ready,
+	input  wire          s_last,
+	input  wire          s_enc_decn,
+	input  wire [127:0]  s_data,
+	input  wire [kw-1:0] s_keep,
+	input  wire [127:0]  s_key,
+	input  wire [127:0]  s_nonce,
+	input  wire          s_ad,
+	input  wire          s_p,
+
+	output wire          m_valid,
+	input  wire          m_ready,
+	output wire          m_last,
+	output wire          m_enc_decn,
+	output wire [127:0]  m_data,
+	output wire [kw-1:0] m_keep,
+	output wire          m_ad,
+	output wire          m_p,
+	output wire          m_t
+);
+
+wire          pad_m_valid;
+wire          pad_m_ready;
+wire          pad_m_last;
+wire          pad_m_enc_decn;
+wire [127:0]  pad_m_data;
+wire [kw-1:0] pad_m_keep;
+wire [127:0]  pad_m_key;
+wire [127:0]  pad_m_nonce;
+wire          pad_m_ad;
+wire          pad_m_p;
+
+ascon_pad #( 
+	.l2_bw (l2_bw)
+) ascon_pad_inst (
+	.clk        (clk),
+	.s_valid    (s_valid),
+	.s_ready    (s_ready),
+	.s_last     (s_last),
+	.s_enc_decn (s_enc_decn),
+	.s_data     (s_data),
+	.s_keep     (s_keep),
+	.s_key      (s_key),
+	.s_nonce    (s_nonce),
+	.s_ad       (s_ad),
+	.s_p        (s_p),
+	.m_valid    (pad_m_valid),
+	.m_ready    (pad_m_ready),
+	.m_last     (pad_m_last),
+	.m_enc_decn (pad_m_enc_decn),
+	.m_data     (pad_m_data),
+	.m_keep     (pad_m_keep),
+	.m_key      (pad_m_key),
+	.m_nonce    (pad_m_nonce),
+	.m_ad       (pad_m_ad),
+	.m_p        (pad_m_p)
+);
+
+// swap to my mixed endianess
+
+wire [127:0] pad_m_data_swapped = {pad_m_data [63:0], pad_m_data [127:64]};
+wire [kw-1:0] pad_m_keep_swapped;
+generate if (kw == 1) begin : gen_pad_m_keep_kw1
+	assign pad_m_keep_swapped  = pad_m_keep;
+end else begin : gen_pad_m_keep_kw_other
+	assign pad_m_keep_swapped = {pad_m_keep [kw-1-:kw/2], pad_m_keep [kw/2-1-:kw/2]};
+end endgenerate
+wire [127:0] pad_m_key_swapped   = {pad_m_key   [63:0], pad_m_key   [127:64]};
+wire [127:0] pad_m_nonce_swapped = {pad_m_nonce [63:0], pad_m_nonce [127:64]};
+
+wire [127:0]  core_m_data;
+wire [kw-1:0] core_m_keep;
+
+ascon_aead128_core #(
+	.rounds_per_clk (rounds_per_clk),
+	.l2_bw          (l2_bw)
+) ascon_aead128_core_inst (
+	.clk        (clk),
+	.s_valid    (pad_m_valid),
+	.s_ready    (pad_m_ready),
+	.s_last     (pad_m_last),
+	.s_enc_decn (pad_m_enc_decn),
+	.s_data     (pad_m_data_swapped),
+	.s_keep     (pad_m_keep_swapped),
+	.s_key      (pad_m_key_swapped),
+	.s_nonce    (pad_m_nonce_swapped),
+	.s_ad       (pad_m_ad),
+	.s_p        (pad_m_p),
+	.m_valid    (m_valid),
+	.m_ready    (m_ready),
+	.m_last     (m_last),
+	.m_enc_decn (m_enc_decn),
+	.m_data     (core_m_data),
+	.m_keep     (core_m_keep),
+	.m_ad       (m_ad),
+	.m_p        (m_p),
+	.m_t        (m_t)
+);
+
+// swap back
+
+wire [127:0] core_m_data_swapped = {core_m_data [63:0], core_m_data [127:64]};
+wire [kw-1:0] core_m_keep_swapped;
+generate if (kw == 1) begin : gen_m_keep_kw1
+	assign core_m_keep_swapped = core_m_keep;
+end else begin : gen_m_keep_kw_other
+	assign core_m_keep_swapped = {core_m_keep [kw-1-:kw/2], core_m_keep [kw/2-1-:kw/2]};
+end endgenerate
+
+function [127:0] mask_data(input [127:0] data, input [kw-1:0] keep);
+	integer i;
+	begin
+		mask_data = 0;
+		for (i = 0; i < kw; i = i + 1) begin
+			if (keep[i]) begin
+				mask_data[bw*(i+1)-1-:bw] = data[bw*(i+1)-1-:bw];
+			end
+		end
+	end
+endfunction
+
+wire [127:0] core_m_data_masked = mask_data(core_m_data_swapped, core_m_keep_swapped);
+
+assign m_data = core_m_data_masked;
+assign m_keep = core_m_keep_swapped;
+
+`ifdef FORMAL
+
+	always @(posedge clk) begin
+		assert(l2_bw == 3); // a byte must be 8 bits for our formal testcases
+	end
+
+	always @(posedge clk) begin
+		if (m_valid) begin
+			assert($onehot({m_ad, m_p, m_t}));
+			if (m_t) begin
+				assert(m_keep == {kw{1'b1}});
+			end
+		end
+	end
+
+	reg [31:0] s_counter = 0;
+	wire t_s_last;
+	always @(posedge clk) begin
+		if (s_valid && s_ready) begin
+			if (t_s_last) begin
+				s_counter <= 0;
+			end else begin
+				s_counter <= s_counter + 1;
+			end
+		end
+	end
+
+	reg [31:0] m_counter = 0;
+	wire t_m_last;
+	always @(posedge clk) begin
+		if (m_valid && m_ready) begin
+			if (t_m_last) begin
+				m_counter <= 0;
+			end else begin
+				m_counter <= m_counter + 1;
+			end
+		end
+	end
+
+	function [127:0] byteswap128(input [127:0] x);
+		integer i;
+		begin
+			for (i = 0; i < 16; i = i + 1) begin
+				byteswap128[8*(i+1)-1-:8] = x[8*(16-i)-1-:8];
+			end
+		end
+	endfunction
+
+	function [127:0] transform(input [127:0] x);
+		transform = byteswap128(x);
+	endfunction
+
+	function [15:0] bitswap16(input [15:0] x);
+		integer i;
+		begin
+			for (i = 0; i < 16; i = i + 1) begin
+				bitswap16[i] = x[15-i];
+			end
+		end
+	endfunction
+
+	function [15:0] transform_keep(input [15:0] x);
+		transform_keep = bitswap16(x);
+	endfunction
+
+	function [127:0] rotr128(input [127:0] x, input integer shamt);
+		rotr128 = (x << (128-shamt)) | (x >> shamt);
+	endfunction
+
+`include "ascon_aead128_formal_testcases.v"
+
+	////////////////////////////////////////////////////////////////////////
+
+	always @(posedge clk) begin
+		cover(m_valid && m_ready && m_last && m_t);
+	end
+
+`endif /* FORMAL */
+
+
+endmodule
