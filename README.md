@@ -233,13 +233,15 @@ Here is a rough performance estimation. First we introduce the following variabl
 
 The number of clock cycles needed can the be calculated for a packet as such:
 
-`n_clks = ceil(12/r) + ceil((pad_a(l_a)/128))*ceil(8/r) + ceil(pad_p(l_p)/128)*ceil(8/r) + ceil(12/r) + 1`
+`n_clks = ceil(12/r) + ceil((pad_a(l_a)/128))*ceil(8/r) + ceil(pad_p(l_p)/128)*ceil(8/r) - ceil(8/r) + ceil(12/r) + 1`
 
 The first term is the number of cycles for key setup, the second and third term
 the number of cycles for associated data and plaintext (/ ciphertext)
-respectively, the fourth term is the processing of the tag and the last is that
-one pause cycle between back to back packets (optimizing that case really
-degrades timing, so I didn't do it).
+respectively, the fourth term is the processing of the tag, the fifth that
+special case on last data beat (always available due to padding on empty
+associated data and plaintext / ciphertext) and the last is that one pause
+cycle between back to back packets (optimizing that case really degrades
+timing, so I didn't do it).
 
 The time required for one packet is then `T = n_clks/freq`, where `freq` is the
 frequency of the core. The performance can then be calculated as `P = L/T`,
@@ -248,9 +250,9 @@ where `L = l_a + l_p`.
 As an example, let's assume we're dealing with Ethernet packets of maximum
 length ~ 1500 Bytes and our core is configured with an unroll factor of 1. For
 nice alignment, let's make it 1440 Bytes / 11520 bits / 90 words. We thus
-require 734 cycles if we only have plaintetxt and no associated data, which
-results in a time span of 1835 ns with a clock frequency of 400 MHz. This
-gives a performance of 6.278 Gbits/s.
+require 741 cycles if we only have plaintetxt and no associated data, which
+results in a time span of 1862.5 ns with a clock frequency of 400 MHz. This
+gives a performance of 6.185 Gbits/s.
 
 TODO
 ----
