@@ -113,10 +113,10 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-	(* full_case, parallel_case *)
-	casez (state)
-		4'b1???: begin
-			if (m_valid && m_ready) begin
+	if (m_valid && m_ready) begin
+		(* full_case, parallel_case *)
+		casez (state)
+			4'b1???: begin
 				if (s_ad) begin
 					r_first <= 0;
 					r_ad <= 1;
@@ -125,32 +125,28 @@ always @(posedge clk) begin
 					r_p <= 1;
 				end
 			end
-		end
-		4'b?1??: begin
-			if (m_valid && m_ready && m_last) begin
-				r_ad <= 0;
-				r_p <= 1;
-			end
-		end
-		4'b??1?: begin
-			if (m_valid && m_ready && m_last) begin
-				r_p <= 0;
-				if (r_enc_decn) begin
-					r_first <= 1;
-				end else begin
-					r_t <= 1;
+			4'b?1??: begin
+				if (m_last) begin
+					r_ad <= 0;
+					r_p <= 1;
 				end
 			end
-		end
-		4'b???1: begin
-			if (r_t) begin
-				if (m_valid && m_ready) begin
-					r_t     <= 0;
-					r_first <= 1;
+			4'b??1?: begin
+				if (m_last) begin
+					r_p <= 0;
+					if (r_enc_decn) begin
+						r_first <= 1;
+					end else begin
+						r_t <= 1;
+					end
 				end
 			end
-		end
-	endcase
+			4'b???1: begin
+				r_t     <= 0;
+				r_first <= 1;
+			end
+		endcase
+	end
 end
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -160,8 +156,8 @@ wire keep_full = &(s_keep);
 
 reg r_extra = 0;
 
-wire needs_extra_beat = (s_valid && s_ready) && 
-	(((r_ad || r_p) && s_last && keep_full && !r_extra) || (r_first && !s_ad && !s_p));
+wire needs_extra_beat = s_ready &&
+	(((r_ad || r_p) && s_last && keep_full) || (r_first && !s_ad && !s_p));
 
 always @(posedge clk) begin
 	if (m_valid && m_ready) begin

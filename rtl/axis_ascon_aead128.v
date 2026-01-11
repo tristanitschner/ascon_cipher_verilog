@@ -109,9 +109,9 @@ end
 
 reg [1:0] r_state = st_cmd;
 always @(posedge clk) begin
-	case (r_state)
-		st_cmd: begin
-			if (s_cmd_tvalid && s_cmd_tready) begin
+	if (i_s_ready && i_s_valid) begin
+		case (r_state)
+			st_cmd: begin
 				case ({!s_cmd_enc_decn, s_cmd_ad, s_cmd_p})
 					3'b000: r_state <= st_cmd;
 					3'b001: r_state <= st_p;
@@ -123,32 +123,30 @@ always @(posedge clk) begin
 					3'b111: r_state <= st_ad;
 				endcase
 			end
-		end
-		st_ad: begin
-			if (s_ad_tvalid && s_ad_tready && s_ad_tlast) begin
-				case ({!r_cmd_enc_decn, r_cmd_p})
-					2'b00: r_state <= st_cmd;
-					2'b01: r_state <= st_p;
-					2'b10: r_state <= st_tag;
-					2'b11: r_state <= st_p;
-				endcase
-			end
-		end
-		st_p: begin
-			if (s_tvalid && s_tready && s_tlast) begin
-				if (r_cmd_enc_decn) begin
-					r_state <= st_cmd;
-				end else begin
-					r_state <= st_tag;
+			st_ad: begin
+				if (i_s_last) begin
+					case ({!r_cmd_enc_decn, r_cmd_p})
+						2'b00: r_state <= st_cmd;
+						2'b01: r_state <= st_p;
+						2'b10: r_state <= st_tag;
+						2'b11: r_state <= st_p;
+					endcase
 				end
 			end
-		end
-		st_tag: begin
-			if (s_tag_tvalid && s_tag_tready) begin
+			st_p: begin
+				if (i_s_last) begin
+					if (r_cmd_enc_decn) begin
+						r_state <= st_cmd;
+					end else begin
+						r_state <= st_tag;
+					end
+				end
+			end
+			st_tag: begin
 				r_state <= st_cmd;
 			end
-		end
-	endcase
+		endcase
+	end
 end
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -41,7 +41,7 @@
 
 module ascon_aead128 #(
 	parameter rounds_per_clk = 1,
-	parameter l2_bw          = 7,
+	parameter l2_bw          = 3,
 `ifdef FORMAL
 	parameter formal_testcase          = 500,
 	parameter formal_enc_decn          = 1,

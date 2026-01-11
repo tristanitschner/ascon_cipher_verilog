@@ -188,18 +188,16 @@ always @(posedge clk) begin
 				end
 			end
 			4'b??1?: begin
-				if (r_p && s_last) begin
+				if (s_last) begin
 					r_p <= 0;
 					r_final <= 1;
 				end
 			end
 		endcase
 	end
-	if (m_valid && m_ready) begin
-		if (r_final) begin
-			r_final <= 0;
-			r_first <= 1;
-		end
+	if (m_valid && m_ready && r_final) begin
+		r_final <= 0;
+		r_first <= 1;
 	end
 end
 
@@ -210,7 +208,7 @@ localparam [63:0] iv = 64'h00001000808c0001;
 
 wire [319:0] ap_m_data_second_key = rr_first ? ap_m_data ^ {192'b0, r_key} : ap_m_data;
 
-wire [63:0] sep_word = r_ds ? ap_m_data_second_key[63:0] ^ (1 << 63) : ap_m_data_second_key[63:0];
+wire [63:0] sep_word = ap_m_data_second_key[63:0] ^ (1 << 63);
 
 wire [319:0] ap_m_data_ds = r_ds ? {ap_m_data_second_key[319:64], sep_word} : ap_m_data_second_key;
 
@@ -266,11 +264,6 @@ always @(*) begin
 		4'b??1?: begin
 			c_ap_s_rnd = b-1;
 			if (s_last) begin
-				c_ap_s_rnd = a-1;
-			end
-		end
-		4'b???1: begin
-			if (s_valid && s_ready && r_final) begin
 				c_ap_s_rnd = a-1;
 			end
 		end
