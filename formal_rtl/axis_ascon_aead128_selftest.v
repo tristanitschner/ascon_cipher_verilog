@@ -221,6 +221,36 @@ end
 // swap the enc / dec command bit
 assign dec_s_cmd_tdata = {fc_m_cmd_tdata[511:257], !fc_m_cmd_tdata[256], fc_m_cmd_tdata[255:0]};
 
+// assumptions for valid keep
+function is_valid_keep(input [15:0] keep, input last);
+	reg first_one_found;
+	reg is_valid;
+	integer i;
+	begin
+		first_one_found = 0;
+		is_valid = 1;
+		if (!last) begin
+			is_valid_keep = keep == {16{1'b1}};
+		end else begin
+			for (i = 0; i < 16; i = i + 1) begin
+				if (!first_one_found) begin
+					if (keep[15-i]) begin
+						first_one_found = 1;
+					end
+				end else begin
+					is_valid = is_valid && keep[15-i];
+				end
+			end
+		end
+		is_valid_keep = is_valid;
+	end
+endfunction
+
+always @(posedge clk) begin
+	assume(is_valid_keep(enc_s_ad_tkeep, enc_s_ad_tlast));
+	assume(is_valid_keep(enc_s_tkeep,    enc_s_tlast));
+end
+
 ////////////////////////////////////////////////////////////////////////////////
 // fifo enc ad in -> dec ad out
 
@@ -284,7 +314,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-	if (dec_m_ad_tvalid) begin
+	if (fad_m_tvalid) begin
 		assert(fad_m_tlast == dec_m_ad_tlast);
 		assert(fad_m_tdata == dec_m_ad_tdata);
 		assert(fad_m_tkeep == dec_m_ad_tkeep);
@@ -350,10 +380,10 @@ always @(posedge clk) begin
 	if (!fad_m_tvalid) begin
 		assume(!dec_m_tready);
 	end
-	if (dec_m_tvalid) begin
-		assert(fad_m_tlast == dec_m_tlast);
-		assert(fad_m_tdata == dec_m_tdata);
-		assert(fad_m_tkeep == dec_m_tkeep);
+	if (fad_m_tvalid) begin
+		assert(fd_m_tlast == dec_m_tlast);
+		assert(fd_m_tdata == dec_m_tdata);
+		assert(fd_m_tkeep == dec_m_tkeep);
 	end
 end
 
