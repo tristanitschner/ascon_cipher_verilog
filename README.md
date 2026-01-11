@@ -271,6 +271,13 @@ FAQ
 No. Using that API, it is quite hard to design a core that is robust and
 doesn't lock up on invalid input. But that's just my opinion.
 
+Similar Projects
+----------------
+
+[ascon-hardware][https://github.com/ascon/ascon-hardware]
+
+[ascon-verilog](https://github.com/rprimas/ascon-verilog)
+
 Acknowledgements
 ----------------
 
