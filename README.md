@@ -274,7 +274,7 @@ doesn't lock up on invalid input. But that's just my opinion.
 Similar Projects
 ----------------
 
-[ascon-hardware][https://github.com/ascon/ascon-hardware]
+[ascon-hardware](https://github.com/ascon/ascon-hardware)
 
 [ascon-verilog](https://github.com/rprimas/ascon-verilog)
 
