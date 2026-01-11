@@ -80,9 +80,9 @@ module axis_ascon_aead128 #(
 	output wire [127:0] m_tag_tdata
 );
 
-parameter l2_bw = keep_support ? 3 : 7;
-localparam bw = 1 << l2_bw;
-localparam kw = 128/bw;
+localparam l2_bw = keep_support ? 3 : 7;
+localparam bw    = 1 << l2_bw;
+localparam kw    = 128/bw;
 
 wire [127:0] s_cmd_key      = s_cmd_tdata[127:0];
 wire [127:0] s_cmd_nonce    = s_cmd_tdata[255:128];
@@ -184,9 +184,9 @@ assign i_s_data =
 generate if (keep_support) begin : gen_input_keep_support
 
 	assign i_s_keep = 
-		(r_state == st_cmd || r_state == st_tag) ? {kw{1'b1}} :
-		r_state == st_ad   ?    s_ad_tkeep : 
-		/* r_state == st_p ? */ s_tkeep;
+		(r_state == st_cmd || r_state == st_tag) ?    {kw{1'b1}} :
+		r_state == st_ad                         ?    s_ad_tkeep :
+		/* r_state == st_p                       ? */ s_tkeep;
 
 end else begin : gen_no_input_keep_support
 
@@ -356,6 +356,10 @@ assign i_m_ready =
 
 	// Note: isolators must be disabled for our checks, since they cannot
 	// deal with buffering
+	always @(posedge clk) begin
+		assert(input_isolator  == 0);
+		assert(output_isolator == 0);
+	end
 
 	reg [31:0] commands_in = 0;
 	always @(posedge clk) begin

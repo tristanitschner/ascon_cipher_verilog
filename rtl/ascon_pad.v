@@ -41,6 +41,8 @@
 // * l2_bw = log2(bw) to support different byte widths (saves area)
 // * we process the same input data as ascon_aead128 module
 // * the original keep is preserved
+// * we generate a new last, but preserve the original last, because the
+// ciphertext is the same length as the plaintext
 // * full little endian implementation
 
 module ascon_pad #( 
@@ -85,11 +87,16 @@ assign m_p        = 1; // we always have plaintext, because if there isn't any, 
 
 ////////////////////////////////////////////////////////////////////////////////
 // state logic
+// Note: we could save this state logic, if we would integrate this padding
+// logic into the core engine, -- however, then the code would be even more
+// unreadable
 
 reg r_first = 1;
 reg r_ad    = 0;
 reg r_p     = 0;
 reg r_t     = 0;
+
+wire [3:0] state = {r_first, r_ad, r_p, r_t};
 
 reg rr_p = 0;
 always @(posedge clk) begin
@@ -106,39 +113,44 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-	if (r_first) begin
-		if (m_valid && m_ready) begin
-			if (s_ad) begin
-				r_first <= 0;
-				r_ad <= 1;
-			end else begin
-				r_first <= 0;
+	(* full_case, parallel_case *)
+	casez (state)
+		4'b1???: begin
+			if (m_valid && m_ready) begin
+				if (s_ad) begin
+					r_first <= 0;
+					r_ad <= 1;
+				end else begin
+					r_first <= 0;
+					r_p <= 1;
+				end
+			end
+		end
+		4'b?1??: begin
+			if (m_valid && m_ready && m_last) begin
+				r_ad <= 0;
 				r_p <= 1;
 			end
 		end
-	end
-	if (r_ad) begin
-		if (m_valid && m_ready && m_last) begin
-			r_ad <= 0;
-			r_p <= 1;
-		end
-	end
-	if (r_p) begin
-		if (m_valid && m_ready && m_last) begin
-			r_p <= 0;
-			if (r_enc_decn) begin
-				r_first <= 1;
-			end else begin
-				r_t <= 1;
+		4'b??1?: begin
+			if (m_valid && m_ready && m_last) begin
+				r_p <= 0;
+				if (r_enc_decn) begin
+					r_first <= 1;
+				end else begin
+					r_t <= 1;
+				end
 			end
 		end
-	end
-	if (r_t) begin
-		if (m_valid && m_ready) begin
-			r_t     <= 0;
-			r_first <= 1;
+		4'b???1: begin
+			if (r_t) begin
+				if (m_valid && m_ready) begin
+					r_t     <= 0;
+					r_first <= 1;
+				end
+			end
 		end
-	end
+	endcase
 end
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -187,9 +199,7 @@ function [127:0] mask_data(input [127:0] data, input [kw-1:0] keep);
 	end
 endfunction
 
-wire [127:0] s_data_fixup = s_data;
-
-wire [127:0] data_masked = mask_data(s_data_fixup, keep_adjusted);
+wire [127:0] data_masked = mask_data(s_data, keep_adjusted);
 
 wire [127:0] data_extended = data_masked | (1 << (bw*keepcount));
 
@@ -199,9 +209,18 @@ wire extra = r_extra || pad_empty_plaintext;
 
 assign m_valid = s_valid || extra;
 assign s_ready = m_ready && !extra;
-assign m_data = extra ? extra_beat : data_extended;
-assign m_keep = extra ? 0          : s_keep;
-assign m_last = (s_last && !needs_extra_beat) || extra;
+
+assign m_data      = extra ? extra_beat : data_extended;
+assign m_keep      = extra ? 0          : s_keep;
+assign m_last      = (s_last && !needs_extra_beat) || extra;
 assign m_last_orig = s_last;
+
+`ifdef FORMAL
+
+	always @(posedge clk) begin
+		assert($onehot(state));
+	end
+
+`endif /* FORMAL */
 
 endmodule

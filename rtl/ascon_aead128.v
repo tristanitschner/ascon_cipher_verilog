@@ -35,6 +35,10 @@
 `default_nettype none
 `timescale 1 ns / 1 ps
 
+// Description:
+// * the main ascon_aead128 engine
+// * in contrast to ascon_aead128_core, here we support padding
+
 module ascon_aead128 #(
 	parameter rounds_per_clk = 1,
 	parameter l2_bw          = 7,
@@ -112,12 +116,15 @@ ascon_pad #(
 // swap to my mixed endianess
 
 wire [127:0] pad_m_data_swapped = {pad_m_data [63:0], pad_m_data [127:64]};
+
 wire [kw-1:0] pad_m_keep_swapped;
+
 generate if (kw == 1) begin : gen_pad_m_keep_kw1
-	assign pad_m_keep_swapped  = pad_m_keep;
+	assign pad_m_keep_swapped = pad_m_keep;
 end else begin : gen_pad_m_keep_kw_other
 	assign pad_m_keep_swapped = {pad_m_keep [kw/2-1-:kw/2], pad_m_keep [kw-1-:kw/2]};
 end endgenerate
+
 wire [127:0] pad_m_key_swapped   = {pad_m_key   [63:0], pad_m_key   [127:64]};
 wire [127:0] pad_m_nonce_swapped = {pad_m_nonce [63:0], pad_m_nonce [127:64]};
 
@@ -154,7 +161,9 @@ ascon_aead128_core #(
 // swap back
 
 wire [127:0] core_m_data_swapped = {core_m_data [63:0], core_m_data [127:64]};
+
 wire [kw-1:0] core_m_keep_swapped;
+
 generate if (kw == 1) begin : gen_m_keep_kw1
 	assign core_m_keep_swapped = core_m_keep;
 end else begin : gen_m_keep_kw_other
@@ -180,7 +189,7 @@ assign m_keep = core_m_keep_swapped;
 
 `ifdef FORMAL
 
-	generate if (formal_testcases_enabled != 0) begin
+	generate if (formal_testcases_enabled != 0) begin : gen_formal_param_assertions
 		always @(posedge clk) begin
 			assert(l2_bw == 3); // a byte must be 8 bits for our formal testcases
 		end
@@ -194,6 +203,9 @@ assign m_keep = core_m_keep_swapped;
 			end
 		end
 	end
+
+	////////////////////////////////////////////////////////////////////////
+	// the generic stuff for the generated formal KAT tests
 
 	always @(posedge clk) begin
 		if (m_valid && m_t) begin
@@ -258,6 +270,7 @@ assign m_keep = core_m_keep_swapped;
 `include "ascon_aead128_formal_testcases.v"
 
 	////////////////////////////////////////////////////////////////////////
+	// cover
 
 	always @(posedge clk) begin
 		cover(m_valid && m_ready && m_last && m_t);

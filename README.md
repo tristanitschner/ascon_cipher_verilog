@@ -263,6 +263,19 @@ If you use this core, either on an FPGA or in an ASIC, please let me know,
 because that would make me very happy! Also, if it's ok for you, I will
 maintain a list here and put you on it!
 
+FAQ
+---
+
+* Will this ever support the CAESAR HARDWARE API?
+
+No, I've looked at it, and that API requires specifying the length of the input
+associated data and plaintext data in advance, though the input may be
+fragmented to the local buffer size. This really is a bummer. If I receive some
+packet, I do not know its length, so I have to buffer it to determine its
+length. Doing so will require the integration of a FIFO, which is not
+necessary, as this design demonstrates. We will definitely stay on the
+area-efficient side!
+
 Acknowledgements
 ----------------
 

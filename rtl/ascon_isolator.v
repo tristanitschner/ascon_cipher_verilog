@@ -59,29 +59,29 @@ wire [dw-1:0] i_data;
 
 generate if (enable) begin : gen_isolator
 
-ascon_skidbuffer #(
-	.dw (dw)
-) ascon_skidbuffer_inst (
-	.clk     (clk),
-	.s_valid (s_valid),
-	.s_ready (s_ready),
-	.s_data  (s_data),
-	.m_valid (i_valid),
-	.m_ready (i_ready),
-	.m_data  (i_data)
-);
+	ascon_skidbuffer #(
+		.dw (dw)
+	) ascon_skidbuffer_inst (
+		.clk     (clk),
+		.s_valid (s_valid),
+		.s_ready (s_ready),
+		.s_data  (s_data),
+		.m_valid (i_valid),
+		.m_ready (i_ready),
+		.m_data  (i_data)
+	);
 
-ascon_regslice #(
-	.dw (dw)
-) ascon_regslice_inst (
-	.clk     (clk),
-	.s_valid (i_valid),
-	.s_ready (i_ready),
-	.s_data  (i_data),
-	.m_valid (m_valid),
-	.m_ready (m_ready),
-	.m_data  (m_data)
-);
+	ascon_regslice #(
+		.dw (dw)
+	) ascon_regslice_inst (
+		.clk     (clk),
+		.s_valid (i_valid),
+		.s_ready (i_ready),
+		.s_data  (i_data),
+		.m_valid (m_valid),
+		.m_ready (m_ready),
+		.m_data  (m_data)
+	);
 
 end else begin : gen_passthrough
 	

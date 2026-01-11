@@ -36,7 +36,7 @@
 `timescale 1 ns / 1 ps
 
 // Input format is as follows:
-// * first beat is key in s_data and s_nonce evaluated
+// * first beat is key in s_key and s_nonce evaluated
 // 	* they are latched, so they are allowed to change after the first beat
 // * s_last should be be set on first beat
 // * the core then expects two further packets, where the first packet is the
@@ -53,7 +53,7 @@
 // * for decode, the third packet is the plaintext and the third has data ==
 // 0 if the tag matches
 // * mixed endian implementation (as is usual with ciphers)
-// * the core ignores keep on first beat and tag input beat
+// * the core ignores keep on first beat and on tag input beat
 
 // TODO: module that properly (= aligned) inserts the tag
 // 	-> is it really worth it? -> NO
@@ -61,10 +61,10 @@
 // 	-> no that breaks timing due to congestion...
 
 module ascon_aead128_core #(
-	parameter rounds_per_clk = 6,
-	parameter l2_bw = 3,
-	localparam bw = 1 << l2_bw,
-	localparam kw = 128/bw
+	parameter  rounds_per_clk = 6,
+	parameter  l2_bw          = 3,
+	localparam bw             = 1 << l2_bw,
+	localparam kw             = 128/bw
 ) (
 	input wire clk,
 
@@ -216,24 +216,26 @@ wire [319:0] ap_m_data_ds = r_ds ? {ap_m_data_second_key[319:64], sep_word} : ap
 
 wire [319:0] ap_m_data_xored = ap_m_data_ds ^ ({192'b0, s_data} << 192);
 
-// I don't know what to name this function...
-function [127:0] mask_data(input [127:0] data, input [127:0] other_data, input [kw-1:0] keep);
+function [127:0] overwrite_data(input [127:0] data, input [127:0] other_data, input [kw-1:0] keep);
 	integer i;
 	begin
-		mask_data = 0;
+		overwrite_data = 0;
 		for (i = 0; i < kw; i = i + 1) begin
 			if (keep[i]) begin
-				mask_data[bw*(i+1)-1-:bw] = data[bw*(i+1)-1-:bw];
+				overwrite_data[bw*(i+1)-1-:bw] = data[bw*(i+1)-1-:bw];
 			end else begin
-				mask_data[bw*(i+1)-1-:bw] = other_data[bw*(i+1)-1-:bw];
+				overwrite_data[bw*(i+1)-1-:bw] = other_data[bw*(i+1)-1-:bw];
 			end
 		end
 	end
 endfunction
 
-wire [127:0] s_data_filled_in = mask_data(s_data, ap_m_data_xored[319:192], s_keep);
+wire [127:0] ap_m_data_overwritten = overwrite_data(s_data, ap_m_data_xored[319:192], s_keep);
 
-wire [319:0] ap_m_data_xored2 = r_enc_decn ? ap_m_data_xored : (!r_enc_decn && s_last) ? {s_data_filled_in, ap_m_data_xored[191:0]} : {s_data, ap_m_data_xored[191:0]};
+wire [319:0] ap_m_data_xored2 =
+	r_enc_decn              ? ap_m_data_xored : 
+	(!r_enc_decn && s_last) ? {ap_m_data_overwritten, ap_m_data_xored[191:0]} : 
+				  {s_data, ap_m_data_xored[191:0]};
 
 reg [319:0] c_ap_s_data; /* wire */
 always @(*) begin
@@ -244,7 +246,8 @@ always @(*) begin
 		4'b??1?: begin
 			c_ap_s_data = ap_m_data_xored2;
 			if (s_last) begin
-				c_ap_s_data = {ap_m_data_xored2[319:192], r_key ^ ap_m_data_xored2[191:64], ap_m_data_xored2[63:0]};
+				c_ap_s_data = {ap_m_data_xored2[319:192], 
+					r_key ^ ap_m_data_xored2[191:64], ap_m_data_xored2[63:0]};
 			end
 		end 
 	endcase
@@ -256,7 +259,7 @@ localparam b = 8;
 
 reg [3:0] c_ap_s_rnd; /* wire */
 always @(*) begin
-	c_ap_s_rnd = a-1;
+	c_ap_s_rnd = 4'hx;
 	casez (state)
 		4'b1???: c_ap_s_rnd = a-1;
 		4'b?1??: c_ap_s_rnd = b-1;
@@ -278,10 +281,11 @@ assign ap_s_rnd = c_ap_s_rnd;
 wire stall = m_valid && !m_ready;
 
 wire skip_empty = !(|(s_keep)) && s_valid && (r_ad || r_p);
-// wire skip_empty = 0;
 
+// well this is a little convoluted...
 assign ap_s_valid = s_valid && !stall && !r_final;
-assign ap_m_ready = r_final ? (r_enc_decn ? m_ready : (m_ready && s_valid)) : ((m_ready && m_valid) || skip_empty);
+assign ap_m_ready = r_final ? (r_enc_decn ? m_ready : (m_ready && s_valid)) : 
+			      ((m_ready && m_valid) || skip_empty);
 assign s_ready = (r_first || (!stall && (r_enc_decn ? !r_final : 1))) && ap_s_ready;
 assign m_valid = r_final ? (r_enc_decn ? ap_m_valid : (ap_m_valid && s_valid)) 
 			 : (ap_m_valid && s_valid && !skip_empty) && !r_first;
@@ -454,10 +458,8 @@ assign m_enc_decn = r_enc_decn;
 				case (m_counter)
 					0: assert(m_data == t_ad0);
 					1: assert(m_data == t_ad1);
-					// skip pad
 					2: assert(m_data == t_c0);
 					3: assert(m_data == t_c1);
-					// skip pad
 					4: assert(diff == 0);
 				endcase
 			end
@@ -468,10 +470,8 @@ assign m_enc_decn = r_enc_decn;
 				case (m_counter)
 					0: assert(m_ad);
 					1: assert(m_ad);
-					// skip pad
 					2: assert(m_p);
 					3: assert(m_p);
-					// skip pad
 					4: assert(m_t);
 				endcase
 			end
@@ -609,8 +609,6 @@ assign m_enc_decn = r_enc_decn;
 
 	always @(posedge clk) begin
 		cover(m_valid && m_ready && m_last && m_t);
-		// cover(s_counter == 1);
-		// cover(s_counter == 5);
 	end
 
 	// AXIS compliance
