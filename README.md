@@ -55,8 +55,11 @@ cd formal; sby -f axis_ascon_aead128_selftest.sby bmc
 
 However, this never really gets very far, because state space explodes.
 
-In the `sim` directory, a standard Icarus Verilog self-checking testbench can
-be found.
+In the `sim` directory, a standard Verilog self-checking testbench can
+be found, that can be run either with Icarus Verilog or Verilator. Its design
+rationale is simple: encrypt random data and decrypt decryt it, then check that
+the output data matches the input. (Though its current design leaves a lot of
+room for improvement.)
 
 ```
 cd sim/axis_ascon_aead128; make
