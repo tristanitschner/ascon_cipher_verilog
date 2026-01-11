@@ -146,8 +146,11 @@ end
 
 wire keep_full = &(s_keep);
 
-wire needs_extra_beat = (s_valid && s_ready) && (((r_ad || r_p) && s_last && keep_full && !r_extra) || (r_first && !s_ad && !s_p));
 reg r_extra = 0;
+
+wire needs_extra_beat = (s_valid && s_ready) && 
+	(((r_ad || r_p) && s_last && keep_full && !r_extra) || (r_first && !s_ad && !s_p));
+
 always @(posedge clk) begin
 	if (m_valid && m_ready) begin
 		r_extra <= needs_extra_beat;
