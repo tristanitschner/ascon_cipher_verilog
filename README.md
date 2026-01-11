@@ -96,7 +96,7 @@ must send the core a command beat, where command is composed as follows:
 
 * `s_cmd_tdata[127:0]` maps to the cipher key.
 * `s_cmd_tdata[255:128]` maps to the cipher nonce.
-* `s_cmd_tdata[256]` a one indicades to perform an encryption operation, a zero is a decryption operation.
+* `s_cmd_tdata[256]` a one indicates to perform an encryption operation, a zero is a decryption operation.
 * `s_cmd_tdata[257]` a one indicates that associated data will be presented.
 * `s_cmd_tdata[258]` a one indicates that plaintext / ciphertext will be presented on the main stream.
 
@@ -212,6 +212,35 @@ Performance
 I don't have any performance data to show, but I have no doubt to assure you
 that it is as optimized as can be without sacrificing timing. If you use this
 core and run performance measurements, I will gladly put them here.
+
+Here is a rough performance estimation. First we introduce the following variables:
+
+* `l_a`: length of the associated data in bits
+* `l_p`: length of the plaintext / ciphertext in bits
+* `r`: rounds per clk parameter
+* `pad_a()`: padding function for associated data, returns new length in bits
+* `pad_p()`: padding function for plaintext / ciphertext, returns new length in bits
+
+The number of clock cycles needed can the be calculated for a packet as such:
+
+`n_clks = ceil(12/r) + ceil((pad_a(l_a)/128))*ceil(8/r) + ceil(pad_p(l_p)/128)*ceil(8/r) + ceil(12/r) + 1`
+
+The first term is the number of cycles for key setup, the second and third term
+the number of cycles for associated data and plaintext (/ ciphertext)
+respectively, the fourth term is the processing of the tag and the last is that
+one pause cycle between back to back packets (optimizing that case really
+degrades timing, so I didn't do it).
+
+The time required for one packet is then `T = n_clks/freq`, where `freq` is the
+frequency of the core. The performance can then be calculated as `P = L/T`,
+where `L = l_a + l_p`.
+
+As an example, let's assume we're dealing with Ethernet packets of maximum
+length ~ 1500 Bytes and our core is configured with an unroll factor of 1. For
+nice alignment, let's make it 1440 Bytes / 11520 bits / 90 words. We thus
+require 734 cycles if we only have plaintetxt and no associated data, which
+results in a time span of 1832.5 ns with a clock frequency of 400 MHz. This
+gives a performance of 6.278 Gbits/s.
 
 TODO
 ----
