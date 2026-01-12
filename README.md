@@ -250,7 +250,7 @@ where `L = l_a + l_p`.
 As an example, let's assume we're dealing with Ethernet packets of maximum
 length ~ 1500 Bytes and our core is configured with an unroll factor of 1. For
 nice alignment, let's make it 1440 Bytes / 11520 bits / 90 words. We thus
-require 741 cycles if we only have plaintetxt and no associated data, which
+require 745 cycles if we only have plaintetxt and no associated data, which
 results in a time span of 1862.5 ns with a clock frequency of 400 MHz. This
 gives a performance of 6.185 Gbits/s.
 
