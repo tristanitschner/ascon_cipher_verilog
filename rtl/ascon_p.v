@@ -80,7 +80,7 @@ wire do_something = r_running && !(m_valid && !m_ready);
 wire [3:0] current_round_indices [0:rounds_per_clk-1];
 
 wire counter_last;
-reg [3:0] counter; // necessary for formal
+wire [3:0] counter; // necessary for formal
 generate if (rounds_per_clk == 1) begin : gen_count_downwards
 	// use downcounting counter for better timing
 
