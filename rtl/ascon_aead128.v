@@ -78,6 +78,7 @@ wire          pad_m_valid;
 wire          pad_m_ready;
 wire          pad_m_last;
 wire          pad_m_last_orig;
+wire          pad_m_skip;
 wire          pad_m_enc_decn;
 wire [127:0]  pad_m_data;
 wire [kw-1:0] pad_m_keep;
@@ -104,6 +105,7 @@ ascon_pad #(
 	.m_ready     (pad_m_ready),
 	.m_last      (pad_m_last),
 	.m_last_orig (pad_m_last_orig),
+	.m_skip      (pad_m_skip),
 	.m_enc_decn  (pad_m_enc_decn),
 	.m_data      (pad_m_data),
 	.m_keep      (pad_m_keep),
@@ -140,6 +142,7 @@ ascon_aead128_core #(
 	.s_ready     (pad_m_ready),
 	.s_last      (pad_m_last),
 	.s_last_orig (pad_m_last_orig),
+	.s_skip      (pad_m_skip),
 	.s_enc_decn  (pad_m_enc_decn),
 	.s_data      (pad_m_data_swapped),
 	.s_keep      (pad_m_keep_swapped),

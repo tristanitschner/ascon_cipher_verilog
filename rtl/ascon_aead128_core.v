@@ -72,6 +72,7 @@ module ascon_aead128_core #(
 	output wire          s_ready,
 	input  wire          s_last,
 	input  wire          s_last_orig,
+	input  wire          s_skip,
 	input  wire          s_enc_decn,
 	input  wire [127:0]  s_data,
 	input  wire [kw-1:0] s_keep,
@@ -273,7 +274,7 @@ assign ap_s_rnd = c_ap_s_rnd;
 
 wire stall = m_valid && !m_ready;
 
-wire skip_empty = !(|(s_keep)) && s_valid && (r_ad || r_p);
+wire skip_empty = s_skip && s_valid && (r_ad || r_p);
 
 // well this is a little convoluted...
 assign ap_s_valid = s_valid && !stall && !r_final;

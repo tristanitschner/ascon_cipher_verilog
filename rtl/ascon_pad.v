@@ -68,6 +68,7 @@ module ascon_pad #(
 	input  wire          m_ready,
 	output wire          m_last,
 	output wire          m_last_orig,
+	output wire          m_skip,
 	output wire          m_enc_decn,
 	output wire [127:0]  m_data,
 	output wire [kw-1:0] m_keep,
@@ -210,6 +211,7 @@ assign m_data      = extra ? extra_beat : data_extended;
 assign m_keep      = extra ? 0          : s_keep;
 assign m_last      = (s_last && !needs_extra_beat) || extra;
 assign m_last_orig = s_last;
+assign m_skip      = extra;
 
 `ifdef FORMAL
 
