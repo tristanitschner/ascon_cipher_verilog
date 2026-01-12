@@ -37,7 +37,7 @@
 
 module axis_ascon_aead128 #(
 	parameter rounds_per_clk  = 1,
-	parameter keep_support    = 0,
+	parameter keep_support    = 1,
 	parameter input_isolator  = 1,
 	parameter output_isolator = 1
 ) (
