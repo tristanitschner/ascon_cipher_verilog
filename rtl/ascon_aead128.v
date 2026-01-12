@@ -272,9 +272,24 @@ assign m_keep = core_m_keep_swapped;
 	////////////////////////////////////////////////////////////////////////
 	// cover
 
+	wire tag_happens = m_valid && m_ready && m_last && m_t;
+
 	always @(posedge clk) begin
-		cover(m_valid && m_ready && m_last && m_t);
+		cover(tag_happens);
 	end
+
+	// properties for forward progress -> must reach at least two packets
+	reg tag_happened = 0;
+	always @(posedge clk) begin
+		if (tag_happens) begin
+			tag_happened <= 1;
+		end
+	end
+
+	always @(posedge clk) begin
+		cover(tag_happened && tag_happens);
+	end
+
 
 	// AXI compliance
 	always @(posedge clk) begin

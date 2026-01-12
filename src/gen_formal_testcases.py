@@ -228,25 +228,27 @@ def gen_last_assumptions(test, enc_decn):
 """
     template_start = """
     always @(posedge clk) begin
+        if (s_valid) begin
 """
     template = """
-    assume(s_last == (s_counter == %d || s_counter == %d || s_counter == %d));
+            assume(s_last == (s_counter == %d || s_counter == %d || s_counter == %d));
 """
     template_end = """
+        end
     end
 """
     print(template_start)
     ad_len = len(test["ad_words"])
     p_len  = len(test["p_words"])
     c_len  = len(test["c_words"])
-    # TODO: can this be refactored? after all c_len should always == p_len
+    assert p_len == c_len
     if enc_decn:
-        print(template % (0, ad_len, ad_len + p_len)) # Note missing -1 for first word
+        print(template % (-1, -1 if (ad_len == 0) else ad_len, -1 if ((ad_len + p_len) == 0) else (ad_len + p_len))) # Note missing -1 for first word
         print(template_end)
         print(template_t_s_last % (ad_len + p_len))
         print(template_t_m_last % (ad_len + p_len))
     else:
-        print(template % (ad_len, ad_len + c_len, ad_len + c_len + 1)) # +1 for tag
+        print(template % (-1 if (ad_len == 0) else ad_len, -1 if ((ad_len + c_len) == 0) else (ad_len + c_len), ad_len + c_len + 1)) # +1 for tag
         print(template_end)
         print(template_t_s_last % (ad_len + c_len + 1))
         print(template_t_m_last % (ad_len + c_len))
@@ -284,6 +286,54 @@ def gen_data_assertions(test, enc_decn):
             else:
                 print(template % (i, "128'b0"))
     print(template_end)
+
+def gen_keep_assertions(test, enc_decn):
+    template_start = """
+    always @(posedge clk) begin
+        if (m_valid) begin
+            case (m_counter)
+"""
+    template = "                %d: assert(m_keep == %s);"
+    template_end = """
+                default: ;
+            endcase
+        end
+    end
+"""
+    print(template_start)
+    for i in range(len(test["ad_words"])):
+        print(template % (i+1, "t_ad%d_k" % i))
+    if enc_decn:
+        for i in range(len(test["p_words"])):
+            print(template % (i+len(test["ad_words"])+1, "t_p%d_k" % i))
+    else:
+        for i in range(len(test["c_words"])):
+            print(template % (i+len(test["ad_words"])+1, "t_c%d_k" % i))
+    print(template_end)
+
+def gen_last_assertions(test, enc_decn):
+    template_start = """
+    always @(posedge clk) begin
+        if (m_valid) begin
+"""
+    template = """
+            assert(m_last == (m_counter == %d || m_counter == %d || m_counter == %d));
+"""
+    template_end = """
+        end
+    end
+"""
+    print(template_start)
+    ad_len = len(test["ad_words"])
+    p_len  = len(test["p_words"])
+    c_len  = len(test["c_words"])
+    assert p_len == c_len
+    if enc_decn:
+        print(template % (-1 if (ad_len == 0) else ad_len - 1, -1 if ((ad_len + c_len) == 0) else (ad_len + c_len - 1), ad_len + c_len))
+        print(template_end)
+    else:
+        print(template % (-1 if (ad_len == 0) else ad_len - 1, -1 if ((ad_len + c_len) == 0) else (ad_len + p_len - 1), ad_len + c_len)) 
+        print(template_end)
 
 def gen_sideband_assertions(test, enc_decn):
     template_start = """
@@ -330,6 +380,7 @@ def main():
             gen_keep_assumptions(test, enc_decn)
             gen_last_assumptions(test, enc_decn)
             gen_data_assertions(test, enc_decn)
+            gen_last_assertions(test, enc_decn)
             gen_sideband_assertions(test, enc_decn)
             gen_generate_footer()
 
