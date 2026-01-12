@@ -78,14 +78,14 @@ workings are documented in the top comments in the file
 IP Core Description
 -------------------
 
-The IP Core interfaces are, as is apparent from the image, centered around four
+The IP core interfaces are, as is apparent from the image, centered around four
 input SLAVE streams and three output MASTER streams. Before we dive into their
 description, here is an explanation of the parameters:
 
-* `input_isolator`: This setting enable an isolator at the input of the
-  Core. This will significantly improve timing inside a larger design.
-* `output_isolator`: This setting enable an isolator at the output of the
-  Core. This will significantly improve timing inside a larger design.
+* `input_isolator`: This setting enables an isolator at the input of the
+  core. This will significantly improve timing inside a larger design.
+* `output_isolator`: This setting enables an isolator at the output of the
+  core. This will significantly improve timing inside a larger design.
 * `rounds_per_clk`: This setting specifies the unroll factor, i.e. the number
   of rounds to be performed per clock cycle. There are no restrictions around
   this parameter, except that it must not be 0 or larger than 12. (Well, it
@@ -286,5 +286,5 @@ Similar Projects
 Acknowledgements
 ----------------
 
-I'd like to thank the author of [ascon-c](https://github.com/ascon/ascon-c) for
+I'd like to thank the authors of [ascon-c](https://github.com/ascon/ascon-c) for
 his reference implementation, which greatly simplified early debugging work.
