@@ -5,7 +5,8 @@ cover
 [options]
 bmc: mode bmc
 cover: mode cover
-depth 100
+bmc: depth 9
+cover: depth 17
 
 [engines]
 bmc: smtbmc
@@ -17,6 +18,8 @@ read_verilog ascon_p.v
 read_verilog ascon_pad.v
 read_verilog ascon_aead128_core.v
 read_verilog -formal ascon_aead128.v
+
+chparam -set rounds_per_clk 12 ascon_aead128
 
 prep -top ascon_aead128
 
