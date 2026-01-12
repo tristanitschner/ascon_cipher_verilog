@@ -90,6 +90,16 @@ wire         s_cmd_enc_decn = s_cmd_tdata[256];
 wire         s_cmd_ad       = s_cmd_tdata[257];
 wire         s_cmd_p        = s_cmd_tdata[258];
 
+wire          i_s_valid;
+wire          i_s_ready;
+wire          i_s_last;
+wire          i_s_enc_decn;
+wire [127:0]  i_s_data;
+wire [kw-1:0] i_s_keep;
+wire [127:0]  i_s_nonce;
+wire          i_s_ad;
+wire          i_s_p;
+
 ////////////////////////////////////////////////////////////////////////////////
 // state housekeeping
 
@@ -151,16 +161,6 @@ end
 
 ////////////////////////////////////////////////////////////////////////////////
 // mux the inputs
-
-wire          i_s_valid;
-wire          i_s_ready;
-wire          i_s_last;
-wire          i_s_enc_decn;
-wire [127:0]  i_s_data;
-wire [kw-1:0] i_s_keep;
-wire [127:0]  i_s_nonce;
-wire          i_s_ad;
-wire          i_s_p;
 
 assign i_s_valid = 
 	r_state == st_cmd ?    s_cmd_tvalid :
