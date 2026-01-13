@@ -59,7 +59,6 @@ module ascon_pad #(
 	input  wire          s_enc_decn,
 	input  wire [127:0]  s_data,
 	input  wire [kw-1:0] s_keep,
-	input  wire [127:0]  s_key,
 	input  wire [127:0]  s_nonce,
 	input  wire          s_ad,
 	input  wire          s_p,
@@ -72,7 +71,6 @@ module ascon_pad #(
 	output wire          m_enc_decn,
 	output wire [127:0]  m_data,
 	output wire [kw-1:0] m_keep,
-	output wire [127:0]  m_key,
 	output wire [127:0]  m_nonce,
 	output wire          m_ad,
 	output wire          m_p
@@ -81,7 +79,6 @@ module ascon_pad #(
 // passing these through is not strictly necessary, but that's just my style :)
 
 assign m_enc_decn = s_enc_decn;
-assign m_key      = s_key;
 assign m_nonce    = s_nonce;
 assign m_ad       = s_ad;
 assign m_p        = 1; // we always have plaintext, because if there isn't any, we pad it
@@ -153,20 +150,18 @@ end
 ////////////////////////////////////////////////////////////////////////////////
 // padding logic
 
-wire keep_full = &(s_keep);
+wire needs_extra_beat = (((r_ad || r_p) && s_last && &(s_keep)) || (r_first && !s_ad && !s_p));
 
 reg r_extra = 0;
 
-wire needs_extra_beat = s_ready &&
-	(((r_ad || r_p) && s_last && keep_full) || (r_first && !s_ad && !s_p));
-
 always @(posedge clk) begin
-	if (m_valid && m_ready) begin
-		r_extra <= needs_extra_beat;
+	if (s_valid && s_ready && needs_extra_beat) begin
+		r_extra <= 1;
+	end
+	if (m_valid && m_ready && r_extra) begin
+		r_extra <= 0;
 	end
 end
-
-localparam [127:0] extra_beat = 1;
 
 function [l2_kw:0] countones (input [kw-1:0] keep);
 	integer i;
@@ -207,11 +202,15 @@ wire extra = r_extra || pad_empty_plaintext;
 assign m_valid = s_valid || extra;
 assign s_ready = m_ready && !extra;
 
+localparam [127:0] extra_beat = 1;
+
 assign m_data      = extra ? extra_beat : data_extended;
 assign m_keep      = extra ? 0          : s_keep;
 assign m_last      = (s_last && !needs_extra_beat) || extra;
 assign m_last_orig = s_last;
 assign m_skip      = extra;
+
+
 
 `ifdef FORMAL
 

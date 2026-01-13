@@ -36,7 +36,7 @@
 `timescale 1 ns / 1 ps
 
 // Input format is as follows:
-// * first beat is key in s_key and s_nonce evaluated
+// * first beat is key in s_data and s_nonce evaluated
 // 	* they are latched, so they are allowed to change after the first beat
 // * s_last should be be set on first beat
 // * the core then expects two further packets, where the first packet is the
@@ -53,7 +53,7 @@
 // * for decode, the third packet is the plaintext and the third has data ==
 // 0 if the tag matches
 // * mixed endian implementation (as is usual with ciphers)
-// * the core ignores keep on first beat and on tag input beat
+// * the core keep must be full on first beat and on tag input beat
 
 // TODO: module that properly (= aligned) inserts the tag
 // 	-> is it really worth it? -> NO
@@ -76,7 +76,6 @@ module ascon_aead128_core #(
 	input  wire          s_enc_decn,
 	input  wire [127:0]  s_data,
 	input  wire [kw-1:0] s_keep,
-	input  wire [127:0]  s_key,
 	input  wire [127:0]  s_nonce,
 	input  wire          s_ad,
 	input  wire          s_p,
@@ -128,7 +127,7 @@ wire [3:0] state = {r_first, r_ad, r_p, r_final};
 reg [127:0] r_key;
 always @(posedge clk) begin
 	if (s_valid && s_ready && r_first) begin
-		r_key <= s_key;
+		r_key <= s_data;
 	end
 end
 
@@ -240,7 +239,7 @@ reg [319:0] c_ap_s_data; /* wire */
 always @(*) begin
 	(* full_case, parallel_case *)
 	casez (state)
-		4'b1???: c_ap_s_data = {iv, s_key, s_nonce};
+		4'b1???: c_ap_s_data = {iv, s_data, s_nonce};
 		4'b?1??: c_ap_s_data = ap_m_data_xored;
 		4'b??1?: begin
 			c_ap_s_data = ap_m_data_xored2;
@@ -399,7 +398,6 @@ assign m_enc_decn = r_enc_decn;
 		end
 
 		always @(posedge clk) begin
-			assume(s_key   == t_key);
 			assume(s_nonce == t_nonce);
 			assume(s_ad && s_p);
 		end
@@ -417,6 +415,7 @@ assign m_enc_decn = r_enc_decn;
 
 		always @(posedge clk) begin
 			case (s_counter)
+				0: assume(s_data == t_key);
 				1: assume(s_data == t_ad0);
 				2: assume(s_data == t_ad1);
 				3: assume(s_data == t_ad_pad);

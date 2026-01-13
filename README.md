@@ -129,7 +129,10 @@ compliant with the AXIS specification on the input streams, because the core
 will only raise its READY signals, if a VALID signal is provided (except for
 the command stream). This is due to the inner working of the base engine and
 cannot be changed due to input / output stream interlock. This might be an
-issue, so remember this if you use the core in a larger design.)
+issue, so remember this if you use the core in a larger design.
+
+Addendum: The core is now AXIS compliant also if the decoupling between
+the pad and core engine is enabled.)
 
 Verification Strategies
 -----------------------
@@ -142,42 +145,45 @@ a few hours even on a modern machine.
 Resource Usage and Timing
 -------------------------
 
-Timing is quite good, here's a result for a `xczu7eg-fbvb900-3-e` Zynq
-Ultrascale+ device with a target frequency of 400 MHz:
+Timing is quite good, here's a result of an out-of-context synthesis for a
+`xczu7eg-fbvb900-3-e` Zynq Ultrascale+ device with a target frequency of 500
+MHz:
 
 ```
-Slack (MET) :             0.802ns  (required time - arrival time)
-  Source:                 ascon_aead128_core_inst/r_ad_reg_rep/C
-                            (rising edge-triggered cell FDRE clocked by clock  {rise@0.000ns fall@1.250ns period=2.500ns})
-  Destination:            ascon_aead128_core_inst/ascon_p_inst/r_state_reg[192]/D
-                            (rising edge-triggered cell FDRE clocked by clock  {rise@0.000ns fall@1.250ns period=2.500ns})
+Slack (MET) :             0.683ns  (required time - arrival time)
+  Source:                 ascon_aead128_core_inst/ascon_p_inst/r_running_reg/C
+                            (rising edge-triggered cell FDRE clocked by clock  {rise@0.000ns fall@1.000ns period=2.000ns})
+  Destination:            gen_decouple_pad2core.ascon_isolator_inst/gen_isolator.ascon_regslice_inst/r_data_reg[100]/CE
+                            (rising edge-triggered cell FDRE clocked by clock  {rise@0.000ns fall@1.000ns period=2.000ns})
   Path Group:             clock
   Path Type:              Setup (Max at Slow Process Corner)
-  Requirement:            2.500ns  (clock rise@2.500ns - clock rise@0.000ns)
-  Data Path Delay:        1.679ns  (logic 0.309ns (18.404%)  route 1.370ns (81.596%))
-  Logic Levels:           6  (LUT2=1 LUT3=1 LUT6=4)
+  Requirement:            2.000ns  (clock rise@2.000ns - clock rise@0.000ns)
+  Data Path Delay:        1.231ns  (logic 0.335ns (27.214%)  route 0.896ns (72.786%))
+  Logic Levels:           4  (LUT5=2 LUT6=2)
 ```
 
 ```
-+-------------------------------+--------------------+------------+------------+---------+------+-----+--------+--------+------+------------+
-|            Instance           |       Module       | Total LUTs | Logic LUTs | LUTRAMs | SRLs | FFs | RAMB36 | RAMB18 | URAM | DSP Blocks |
-+-------------------------------+--------------------+------------+------------+---------+------+-----+--------+--------+------+------------+
-| ascon_aead128                 |              (top) |       1390 |       1390 |       0 |    0 | 470 |      0 |      0 |    0 |          0 |
-|   ascon_aead128_core_inst     | ascon_aead128_core |       1284 |       1284 |       0 |    0 | 463 |      0 |      0 |    0 |          0 |
-|     (ascon_aead128_core_inst) | ascon_aead128_core |          4 |          4 |       0 |    0 | 138 |      0 |      0 |    0 |          0 |
-|     ascon_p_inst              |            ascon_p |       1280 |       1280 |       0 |    0 | 325 |      0 |      0 |    0 |          0 |
-|   ascon_pad_inst              |          ascon_pad |        106 |        106 |       0 |    0 |   7 |      0 |      0 |    0 |          0 |
-+-------------------------------+--------------------+------------+------------+---------+------+-----+--------+--------+------+------------+
++---------------------------------------------+--------------------+------------+------------+---------+------+-----+--------+--------+------+------------+
+|                   Instance                  |       Module       | Total LUTs | Logic LUTs | LUTRAMs | SRLs | FFs | RAMB36 | RAMB18 | URAM | DSP Blocks |
++---------------------------------------------+--------------------+------------+------------+---------+------+-----+--------+--------+------+------------+
+| ascon_aead128                               |              (top) |       1526 |       1526 |       0 |    0 | 995 |      0 |      0 |    0 |          0 |
+|   ascon_aead128_core_inst                   | ascon_aead128_core |       1231 |       1231 |       0 |    0 | 461 |      0 |      0 |    0 |          0 |
+|     (ascon_aead128_core_inst)               | ascon_aead128_core |          2 |          2 |       0 |    0 | 136 |      0 |      0 |    0 |          0 |
+|     ascon_p_inst                            |            ascon_p |       1229 |       1229 |       0 |    0 | 325 |      0 |      0 |    0 |          0 |
+|   gen_decouple_pad2core.ascon_isolator_inst |     ascon_isolator |        270 |        270 |       0 |    0 | 527 |      0 |      0 |    0 |          0 |
+|     gen_isolator.ascon_regslice_inst        |     ascon_regslice |         73 |         73 |       0 |    0 | 263 |      0 |      0 |    0 |          0 |
+|     gen_isolator.ascon_skidbuffer_inst      |   ascon_skidbuffer |        197 |        197 |       0 |    0 | 264 |      0 |      0 |    0 |          0 |
++---------------------------------------------+--------------------+------------+------------+---------+------+-----+--------+--------+------+------------+
 ```
 
 Oh boy, and now look at that logic level distribution :D
 
 ```
-+-----------------+-------------+---+---+-----+-----+
-| End Point Clock | Requirement | 1 | 4 |  5  |  6  |
-+-----------------+-------------+---+---+-----+-----+
-| clock           | 2.500ns     | 2 | 4 | 582 | 208 |
-+-----------------+-------------+---+---+-----+-----+
++-----------------+-------------+-----+-----+---+
+| End Point Clock | Requirement |  3  |  4  | 5 |
++-----------------+-------------+-----+-----+---+
+| clock           | 2.000ns     | 284 | 713 | 3 |
++-----------------+-------------+-----+-----+---+
 ```
 
 I must admit, that I removed byte-support for this result and set the unroll
@@ -186,34 +192,40 @@ factor to 1, such that it looks good when compared to other implementations.
 database, if you're interested. (You need to scroll down, on the bottom left is
 a small search window, type `ascon` there, so you only see the ascon ciphers.)
 
-Here's the data for four rounds per clock and full byte support:
+Here's the data for four rounds per clock, full byte support and a target
+frequency of 400 MHz:
 
 ```
-+-------------------------------+--------------------+------------+------------+---------+------+-----+--------+--------+------+------------+
-|            Instance           |       Module       | Total LUTs | Logic LUTs | LUTRAMs | SRLs | FFs | RAMB36 | RAMB18 | URAM | DSP Blocks |
-+-------------------------------+--------------------+------------+------------+---------+------+-----+--------+--------+------+------------+
-| ascon_aead128                 |              (top) |       4043 |       4043 |       0 |    0 | 471 |      0 |      0 |    0 |          0 |
-|   ascon_aead128_core_inst     | ascon_aead128_core |       3840 |       3840 |       0 |    0 | 464 |      0 |      0 |    0 |          0 |
-|     (ascon_aead128_core_inst) | ascon_aead128_core |          0 |          0 |       0 |    0 | 139 |      0 |      0 |    0 |          0 |
-|     ascon_p_inst              |            ascon_p |       3840 |       3840 |       0 |    0 | 325 |      0 |      0 |    0 |          0 |
-|   ascon_pad_inst              |          ascon_pad |        203 |        203 |       0 |    0 |   7 |      0 |      0 |    0 |          0 |
-+-------------------------------+--------------------+------------+------------+---------+------+-----+--------+--------+------+------------+
++---------------------------------------------+--------------------+------------+------------+---------+------+------+--------+--------+------+------------+
+|                   Instance                  |       Module       | Total LUTs | Logic LUTs | LUTRAMs | SRLs |  FFs | RAMB36 | RAMB18 | URAM | DSP Blocks |
++---------------------------------------------+--------------------+------------+------------+---------+------+------+--------+--------+------+------------+
+| ascon_aead128                               |              (top) |       4271 |       4271 |       0 |    0 | 1028 |      0 |      0 |    0 |          0 |
+|   ascon_aead128_core_inst                   | ascon_aead128_core |       3844 |       3844 |       0 |    0 |  462 |      0 |      0 |    0 |          0 |
+|     (ascon_aead128_core_inst)               | ascon_aead128_core |          2 |          2 |       0 |    0 |  137 |      0 |      0 |    0 |          0 |
+|     ascon_p_inst                            |            ascon_p |       3842 |       3842 |       0 |    0 |  325 |      0 |      0 |    0 |          0 |
+|   ascon_pad_inst                            |          ascon_pad |        134 |        134 |       0 |    0 |    9 |      0 |      0 |    0 |          0 |
+|   gen_decouple_pad2core.ascon_isolator_inst |     ascon_isolator |        293 |        293 |       0 |    0 |  557 |      0 |      0 |    0 |          0 |
+|     gen_isolator.ascon_regslice_inst        |     ascon_regslice |         88 |         88 |       0 |    0 |  278 |      0 |      0 |    0 |          0 |
+|     gen_isolator.ascon_skidbuffer_inst      |   ascon_skidbuffer |        205 |        205 |       0 |    0 |  279 |      0 |      0 |    0 |          0 |
++---------------------------------------------+--------------------+------------+------------+---------+------+------+--------+--------+------+------------+
 
-Slack (MET) :             0.061ns  (required time - arrival time)
-  Source:                 ascon_pad_inst/r_p_reg/C
+Slack (MET) :             0.141ns  (required time - arrival time)
+  Source:                 ascon_aead128_core_inst/ascon_p_inst/r_rnd_reg[2]/C
                             (rising edge-triggered cell FDRE clocked by clock  {rise@0.000ns fall@1.250ns period=2.500ns})
-  Destination:            ascon_aead128_core_inst/ascon_p_inst/r_state_reg[193]/D
+  Destination:            ascon_aead128_core_inst/ascon_p_inst/r_state_reg[100]/D
                             (rising edge-triggered cell FDRE clocked by clock  {rise@0.000ns fall@1.250ns period=2.500ns})
   Path Group:             clock
   Path Type:              Setup (Max at Slow Process Corner)
   Requirement:            2.500ns  (clock rise@2.500ns - clock rise@0.000ns)
-  Data Path Delay:        2.420ns  (logic 0.463ns (19.132%)  route 1.957ns (80.868%))
+  Data Path Delay:        2.340ns  (logic 0.843ns (36.026%)  route 1.497ns (63.974%))
+  Logic Levels:           9  (LUT3=2 LUT5=4 LUT6=3)
 
-+-----------------+-------------+---+---+-----+-----+----+-----+
-| End Point Clock | Requirement | 1 | 5 |  6  |  7  |  8 |  9  |
-+-----------------+-------------+---+---+-----+-----+----+-----+
-| clock           | 2.500ns     | 2 | 4 | 325 | 133 | 13 | 320 |
-+-----------------+-------------+---+---+-----+-----+----+-----+
+
++-----------------+-------------+-----+-----+---+-----+
+| End Point Clock | Requirement |  5  |  6  | 7 |  9  |
++-----------------+-------------+-----+-----+---+-----+
+| clock           | 2.500ns     | 257 | 421 | 2 | 320 |
++-----------------+-------------+-----+-----+---+-----+
 ```
 
 Performance
@@ -287,4 +299,4 @@ Acknowledgements
 ----------------
 
 I'd like to thank the authors of [ascon-c](https://github.com/ascon/ascon-c) for
-his reference implementation, which greatly simplified early debugging work.
+their reference implementation, which greatly simplified early debugging work.

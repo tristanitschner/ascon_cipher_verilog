@@ -158,7 +158,6 @@ def gen_keyword_assumptions(test, enc_decn):
     always @(posedge clk) begin
         if (s_valid && s_counter == 0) begin
             assume(s_enc_decn == 1'b%x);
-            assume(s_key      == t_key);
             assume(s_nonce    == t_nonce);
             assume(s_ad       == 1'b%x);
             assume(s_p        == 1'b%x);
@@ -184,6 +183,7 @@ def gen_data_assumptions(test, enc_decn):
 """
     lastwordlen = (len(test["ciphertext"]) + len(test["associated_data"])) % 16
     print(template_start)
+    print(template % (0, "t_key"))
     for i in range(len(test["ad_words"])):
         print(template % (i+1, "t_ad%d" % i))
     if enc_decn:
@@ -209,6 +209,7 @@ def gen_keep_assumptions(test, enc_decn):
     end
 """
     print(template_start)
+    print(template % (0, "{16{1'b1}}"))
     for i in range(len(test["ad_words"])):
         print(template % (i+1, "t_ad%d_k" % i))
     if enc_decn:

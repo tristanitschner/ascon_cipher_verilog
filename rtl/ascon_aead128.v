@@ -40,8 +40,9 @@
 // * in contrast to ascon_aead128_core, here we support padding
 
 module ascon_aead128 #(
-	parameter rounds_per_clk = 1,
-	parameter l2_bw          = 3,
+	parameter rounds_per_clk    = 1,
+	parameter l2_bw             = 7,
+	parameter decouple_pad2core = 1,
 `ifdef FORMAL
 	parameter formal_testcase          = 500,
 	parameter formal_enc_decn          = 1,
@@ -58,7 +59,6 @@ module ascon_aead128 #(
 	input  wire          s_enc_decn,
 	input  wire [127:0]  s_data,
 	input  wire [kw-1:0] s_keep,
-	input  wire [127:0]  s_key,
 	input  wire [127:0]  s_nonce,
 	input  wire          s_ad,
 	input  wire          s_p,
@@ -82,7 +82,6 @@ wire          pad_m_skip;
 wire          pad_m_enc_decn;
 wire [127:0]  pad_m_data;
 wire [kw-1:0] pad_m_keep;
-wire [127:0]  pad_m_key;
 wire [127:0]  pad_m_nonce;
 wire          pad_m_ad;
 wire          pad_m_p;
@@ -97,7 +96,6 @@ ascon_pad #(
 	.s_enc_decn  (s_enc_decn),
 	.s_data      (s_data),
 	.s_keep      (s_keep),
-	.s_key       (s_key),
 	.s_nonce     (s_nonce),
 	.s_ad        (s_ad),
 	.s_p         (s_p),
@@ -109,7 +107,6 @@ ascon_pad #(
 	.m_enc_decn  (pad_m_enc_decn),
 	.m_data      (pad_m_data),
 	.m_keep      (pad_m_keep),
-	.m_key       (pad_m_key),
 	.m_nonce     (pad_m_nonce),
 	.m_ad        (pad_m_ad),
 	.m_p         (pad_m_p)
@@ -127,29 +124,72 @@ end else begin : gen_pad_m_keep_kw_other
 	assign pad_m_keep_swapped = {pad_m_keep [kw/2-1-:kw/2], pad_m_keep [kw-1-:kw/2]};
 end endgenerate
 
-wire [127:0] pad_m_key_swapped   = {pad_m_key   [63:0], pad_m_key   [127:64]};
 wire [127:0] pad_m_nonce_swapped = {pad_m_nonce [63:0], pad_m_nonce [127:64]};
 
 wire [127:0]  core_m_data;
 wire [kw-1:0] core_m_keep;
+
+wire          rs_m_valid;
+wire          rs_m_ready;
+wire          rs_m_last;
+wire          rs_m_last_orig;
+wire          rs_m_skip;
+wire          rs_m_enc_decn;
+wire [127:0]  rs_m_data;
+wire [kw-1:0] rs_m_keep;
+wire [127:0]  rs_m_nonce;
+wire          rs_m_ad;
+wire          rs_m_p;
+
+ascon_isolator #(
+	.dw     (1 + 1 + 1 + 1 + 128 + kw + 128 + 1 + 1),
+	.enable (decouple_pad2core)
+) ascon_isolator_inst (
+	.clk     (clk),
+	.s_valid (pad_m_valid),
+	.s_ready (pad_m_ready),
+	.s_data  ({
+		pad_m_last,
+		pad_m_last_orig,
+		pad_m_skip,
+		pad_m_enc_decn,
+		pad_m_data_swapped,
+		pad_m_keep_swapped,
+		pad_m_nonce_swapped,
+		pad_m_ad,
+		pad_m_p
+	}),
+	.m_valid (rs_m_valid),
+	.m_ready (rs_m_ready),
+	.m_data  ({
+		rs_m_last,
+		rs_m_last_orig,
+		rs_m_skip,
+		rs_m_enc_decn,
+		rs_m_data,
+		rs_m_keep,
+		rs_m_nonce,
+		rs_m_ad,
+		rs_m_p
+	})
+);
 
 ascon_aead128_core #(
 	.rounds_per_clk (rounds_per_clk),
 	.l2_bw          (l2_bw)
 ) ascon_aead128_core_inst (
 	.clk         (clk),
-	.s_valid     (pad_m_valid),
-	.s_ready     (pad_m_ready),
-	.s_last      (pad_m_last),
-	.s_last_orig (pad_m_last_orig),
-	.s_skip      (pad_m_skip),
-	.s_enc_decn  (pad_m_enc_decn),
-	.s_data      (pad_m_data_swapped),
-	.s_keep      (pad_m_keep_swapped),
-	.s_key       (pad_m_key_swapped),
-	.s_nonce     (pad_m_nonce_swapped),
-	.s_ad        (pad_m_ad),
-	.s_p         (pad_m_p),
+	.s_valid     (rs_m_valid),
+	.s_ready     (rs_m_ready),
+	.s_last      (rs_m_last),
+	.s_last_orig (rs_m_last_orig),
+	.s_skip      (rs_m_skip),
+	.s_enc_decn  (rs_m_enc_decn),
+	.s_data      (rs_m_data),
+	.s_keep      (rs_m_keep),
+	.s_nonce     (rs_m_nonce),
+	.s_ad        (rs_m_ad),
+	.s_p         (rs_m_p),
 	.m_valid     (m_valid),
 	.m_ready     (m_ready),
 	.m_last      (m_last),

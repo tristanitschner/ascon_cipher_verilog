@@ -16,6 +16,9 @@ cover: smtbmc
 read_verilog ascon_round.v
 read_verilog ascon_p.v
 read_verilog ascon_pad.v
+read_verilog ascon_regslice.v
+read_verilog ascon_skidbuffer.v
+read_verilog ascon_isolator.v
 read_verilog ascon_aead128_core.v
 read_verilog -formal ascon_aead128.v
 
@@ -28,5 +31,8 @@ prep -top ascon_aead128
 ../rtl/ascon_round.v
 ../rtl/ascon_p.v
 ../rtl/ascon_pad.v
+../rtl/ascon_regslice.v
+../rtl/ascon_skidbuffer.v
+../rtl/ascon_isolator.v
 ../rtl/ascon_aead128_core.v
 ../rtl/ascon_aead128.v

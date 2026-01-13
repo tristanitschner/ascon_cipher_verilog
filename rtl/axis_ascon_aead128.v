@@ -36,10 +36,11 @@
 `timescale 1 ns / 1 ps
 
 module axis_ascon_aead128 #(
-	parameter rounds_per_clk  = 1,
-	parameter keep_support    = 1,
-	parameter input_isolator  = 1,
-	parameter output_isolator = 1
+	parameter rounds_per_clk    = 1,
+	parameter keep_support      = 1,
+	parameter input_isolator    = 1,
+	parameter output_isolator   = 1,
+	parameter decouple_pad2core = 1
 ) (
 	input wire clk,
 
@@ -255,8 +256,9 @@ wire          aa_m_p;
 wire          aa_m_t;
 
 ascon_aead128 #(
-	.rounds_per_clk (rounds_per_clk),
-	.l2_bw          (l2_bw)
+	.rounds_per_clk    (rounds_per_clk),
+	.l2_bw             (l2_bw),
+	.decouple_pad2core (decouple_pad2core)
 ) ascon_aead128_inst1 (
 	.clk        (clk),
 	.s_valid    (is_m_valid),
@@ -265,7 +267,6 @@ ascon_aead128 #(
 	.s_enc_decn (is_m_enc_decn),
 	.s_data     (is_m_data),
 	.s_keep     (is_m_keep),
-	.s_key      (is_m_data),
 	.s_nonce    (is_m_nonce),
 	.s_ad       (is_m_ad),
 	.s_p        (is_m_p),

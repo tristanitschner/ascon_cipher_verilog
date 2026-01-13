@@ -19,5 +19,5 @@ bmc:   $(BMC_TARGETS)
 	touch $@
 
 clean:
-	$(RM) $(COVER_TARGETS)
-	$(RM) $(BMC_TARGETS
+	$(RM) -r $(COVER_TARGETS)
+	$(RM) -r $(BMC_TARGETS)
