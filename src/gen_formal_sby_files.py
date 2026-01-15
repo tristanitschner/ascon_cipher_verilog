@@ -10,8 +10,8 @@ cover
 [options]
 bmc: mode bmc
 cover: mode cover
-bmc: depth 9
-cover: depth 17
+bmc: depth 10
+cover: depth 18
 
 [engines]
 bmc: smtbmc
@@ -27,7 +27,7 @@ read_verilog ascon_isolator.v
 read_verilog ascon_aead128_core.v
 read_verilog -formal ascon_aead128.v
 
-chparam -set rounds_per_clk 16 ascon_aead128
+chparam -set rounds_per_clk 12 ascon_aead128
 chparam -set l2_bw 3 ascon_aead128
 chparam -set formal_enc_decn %d ascon_aead128
 chparam -set formal_testcase %d ascon_aead128

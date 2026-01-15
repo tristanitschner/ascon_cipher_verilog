@@ -38,6 +38,8 @@
 // Description:
 // * the main ascon_aead128 engine
 // * in contrast to ascon_aead128_core, here we support padding
+// * note though that the output data is not padded, that logic has been moved
+// to the axis core and is not guaranteed by the core engine anymore
 
 module ascon_aead128 #(
 	parameter rounds_per_clk    = 1,
@@ -213,21 +215,7 @@ end else begin : gen_m_keep_kw_other
 	assign core_m_keep_swapped = {core_m_keep [kw/2-1-:kw/2], core_m_keep [kw-1-:kw/2]};
 end endgenerate
 
-function [127:0] mask_data(input [127:0] data, input [kw-1:0] keep);
-	integer i;
-	begin
-		mask_data = 0;
-		for (i = 0; i < kw; i = i + 1) begin
-			if (keep[i]) begin
-				mask_data[bw*(i+1)-1-:bw] = data[bw*(i+1)-1-:bw];
-			end
-		end
-	end
-endfunction
-
-wire [127:0] core_m_data_masked = mask_data(core_m_data_swapped, core_m_keep_swapped);
-
-assign m_data = core_m_data_masked;
+assign m_data = core_m_data_swapped;
 assign m_keep = core_m_keep_swapped;
 
 `ifdef FORMAL

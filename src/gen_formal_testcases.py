@@ -140,6 +140,7 @@ def gen_data_wires(test):
         print(template % ("p%d" % i, test["p_words"][i].hex()))
     for i in range(len(test["c_words"])):
         print(template % ("c%d" % i, test["c_words"][i].hex()))
+    print(template % ("zero_word", "0"))
 
 def gen_keep_wires(test):
     template = "    wire [15:0] t_%s_k\t= transform_keep(16'b%s);"
@@ -256,12 +257,19 @@ def gen_last_assumptions(test, enc_decn):
 
 def gen_data_assertions(test, enc_decn):
     template_start = """
+    integer fi;
     always @(posedge clk) begin
         if (m_valid) begin
             case(m_counter)
 """
     template = """
-                %d: assert(m_data == %s);
+                %d: begin
+                    for (fi = 0; fi < 16; fi = fi + 1) begin
+                        if (m_keep[fi]) begin
+                            assert(m_data[8*(fi+1)-1-:8] == %s[8*(fi+1)-1-:8]);
+                        end
+                    end
+                end 
 """
     template_end = """
                 default: ;
@@ -285,7 +293,7 @@ def gen_data_assertions(test, enc_decn):
             if enc_decn:
                 print(template % (i, "t_t"))
             else:
-                print(template % (i, "128'b0"))
+                print(template % (i, "t_zero_word"))
     print(template_end)
 
 def gen_keep_assertions(test, enc_decn):

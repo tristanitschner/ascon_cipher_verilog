@@ -306,6 +306,12 @@ assign m_enc_decn = r_enc_decn;
 		assert($onehot(state));
 	end
 
+	always @(posedge clk) begin
+		if (m_valid && m_t) begin
+			assert(&(m_keep));
+		end
+	end
+
 	reg [31:0] s_counter = 0;
 	wire t_s_last;
 	always @(posedge clk) begin

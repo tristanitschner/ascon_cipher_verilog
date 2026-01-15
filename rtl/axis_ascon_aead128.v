@@ -323,14 +323,31 @@ ascon_isolator #(
 );
 
 ////////////////////////////////////////////////////////////////////////////////
+// don't spill any internal state
+
+function [127:0] mask_data(input [127:0] data, input [kw-1:0] keep);
+	integer i;
+	begin
+		mask_data = 0;
+		for (i = 0; i < kw; i = i + 1) begin
+			if (keep[i]) begin
+				mask_data[bw*(i+1)-1-:bw] = data[bw*(i+1)-1-:bw];
+			end
+		end
+	end
+endfunction
+
+wire [127:0] i_m_data_masked = mask_data(i_m_data, i_m_keep);
+
+////////////////////////////////////////////////////////////////////////////////
 // mux the outputs
 
 assign m_ad_tvalid = i_m_valid && i_m_ad;
-assign m_ad_tdata  = i_m_data;
+assign m_ad_tdata  = i_m_data_masked;
 assign m_ad_tlast  = i_m_last;
 
 assign m_tvalid = i_m_valid && i_m_p;
-assign m_tdata  = i_m_data;
+assign m_tdata  = i_m_data_masked;
 assign m_tlast  = i_m_last;
 
 generate if (keep_support) begin : gen_output_keep_support
@@ -342,7 +359,7 @@ end else begin : gen_no_output_keep_supportr
 end endgenerate
 
 assign m_tag_tvalid = i_m_valid && i_m_t;
-assign m_tag_tdata  = i_m_data;
+assign m_tag_tdata  = i_m_data_masked;
 
 assign i_m_ready = 
 	i_m_ad ?    m_ad_tready :
