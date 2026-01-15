@@ -297,7 +297,7 @@ Similar Projects
 
 Also here's a note from me on other (unstated) implementations: I have now
 finally checked all available papers on Ascon implementations, and this core
-all outperforms them. So today is 15. January 2025. If any new papers appear
+all outperforms them. So today is 15. January 2026. If any new papers appear
 with more performant implementations, I guarantee you 100% they're base on or
 "inspired by" this core. Thanks for taking note.
 
