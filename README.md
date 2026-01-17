@@ -295,11 +295,27 @@ Similar Projects
 
 [ascon-verilog](https://github.com/rprimas/ascon-verilog)
 
-Also here's a note from me on other (unstated) implementations: I have now
+[ascon-aead128-sv](https://github.com/c-herail/ascon-aead128-sv)
+
+There are also many other repositories on Github, but I only listed what looked
+finished to me.
+
+And then there's this guy:
+
+[ASCON-AEAD128](https://github.com/Kwash67/ASCON-AEAD128)
+
+He uses Prima's code, but doesn't state so in his Readme!?! He should give
+credit!
+
+Also I have asked [TU Graz Ascon
+Team](https://ascon.isec.tugraz.at/contact.html) what they think of my core,
+but they don't answer me.... :(
+
+_Also here's a note from me on other (unstated) implementations: I have now
 finally checked all available papers on Ascon implementations, and this core
 all outperforms them. So today is 15. January 2026. If any new papers appear
 with more performant implementations, I guarantee you 100% they're base on or
-"inspired by" this core. Thanks for taking note.
+"inspired by" this core. Thanks for taking note._
 
 Acknowledgements
 ----------------
