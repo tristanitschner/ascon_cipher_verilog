@@ -23,9 +23,10 @@ read_verilog ascon_aead128_core.v
 read_verilog ascon_aead128.v
 read_verilog -formal axis_ascon_aead128.v
 
-chparam -set rounds_per_clk  8 axis_ascon_aead128
-chparam -set input_isolator  0 axis_ascon_aead128
-chparam -set output_isolator 0 axis_ascon_aead128
+chparam -set rounds_per_clk    8 axis_ascon_aead128
+chparam -set decouple_pad2core 0 axis_ascon_aead128
+chparam -set input_isolator    0 axis_ascon_aead128
+chparam -set output_isolator   0 axis_ascon_aead128
 
 prep -top axis_ascon_aead128
 

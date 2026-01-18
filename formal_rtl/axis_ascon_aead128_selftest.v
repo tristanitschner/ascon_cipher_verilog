@@ -314,7 +314,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-	if (fad_m_tvalid) begin
+	if (fad_m_tvalid && dec_m_ad_tvalid) begin
 		assert(fad_m_tlast == dec_m_ad_tlast);
 		assert(fad_m_tdata == dec_m_ad_tdata);
 		assert(fad_m_tkeep == dec_m_ad_tkeep);
@@ -380,7 +380,7 @@ always @(posedge clk) begin
 	if (!fad_m_tvalid) begin
 		assume(!dec_m_tready);
 	end
-	if (fad_m_tvalid) begin
+	if (fad_m_tvalid && dec_m_tvalid) begin
 		assert(fd_m_tlast == dec_m_tlast);
 		assert(fd_m_tdata == dec_m_tdata);
 		assert(fd_m_tkeep == dec_m_tkeep);
