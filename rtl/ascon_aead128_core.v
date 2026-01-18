@@ -246,6 +246,7 @@ always @(*) begin
 					r_key ^ ap_m_data_xored2[191:64], ap_m_data_xored2[63:0]};
 			end
 		end 
+		default: c_ap_s_data = 320'hx;
 	endcase
 end
 assign ap_s_data = c_ap_s_data;
