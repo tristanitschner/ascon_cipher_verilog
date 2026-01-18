@@ -1,7 +1,7 @@
 SBY_FILES := $(wildcard *.sby)
 
-COVER_TARGETS := $(SBY_FILES:.sby=_cover)
-BMC_TARGETS   := $(SBY_FILES:.sby=_bmc)
+COVER_TARGETS := $(SBY_FILES:.sby=_cover.ran)
+BMC_TARGETS   := $(SBY_FILES:.sby=_bmc.ran)
 
 all: cover bmc
 
@@ -10,11 +10,11 @@ all: cover bmc
 cover: $(COVER_TARGETS)
 bmc:   $(BMC_TARGETS)
 
-%_cover: %.sby
+%_cover.ran: %.sby
 	sby -f $< cover
 	touch $@
 
-%_bmc: %.sby
+%_bmc.ran: %.sby
 	sby -f $< bmc
 	touch $@
 

@@ -12,6 +12,9 @@ module axis_ascon_aead128_selftest #(
 	parameter keep_support       = 1,
 	parameter input_isolator     = 0,
 	parameter output_isolator    = 0,
+	parameter decouple_pad2core  = 0,
+	// do not change ^ , this testbench cannot handle buffering in the
+	// core, because ordering is not preserved
 	parameter formal_fifo_cmd_aw = 1,
 	parameter formal_fifo_ad_aw  = 1,
 	parameter formal_fifo_d_aw   = 1
@@ -52,10 +55,11 @@ wire           enc_m_tag_tready;
 wire [127:0]   enc_m_tag_tdata;
 
 axis_ascon_aead128 #(
-	.rounds_per_clk  (rounds_per_clk),
-	.keep_support    (keep_support),
-	.input_isolator  (input_isolator),
-	.output_isolator (output_isolator)
+	.rounds_per_clk    (rounds_per_clk),
+	.keep_support      (keep_support),
+	.input_isolator    (input_isolator),
+	.output_isolator   (output_isolator),
+	.decouple_pad2core (decouple_pad2core)
 ) axis_ascon_aead128_inst_enc (
 	.clk          (clk),
 	.s_cmd_tvalid (enc_s_cmd_tvalid),
@@ -122,10 +126,11 @@ wire         dec_m_tag_tready;
 wire [127:0] dec_m_tag_tdata;
 
 axis_ascon_aead128 #(
-	.rounds_per_clk  (rounds_per_clk),
-	.keep_support    (keep_support),
-	.input_isolator  (input_isolator),
-	.output_isolator (output_isolator)
+	.rounds_per_clk    (rounds_per_clk),
+	.keep_support      (keep_support),
+	.input_isolator    (input_isolator),
+	.output_isolator   (output_isolator),
+	.decouple_pad2core (decouple_pad2core)
 ) axis_ascon_aead128_inst_dec (
 	.clk          (clk),
 	.s_cmd_tvalid (dec_s_cmd_tvalid),
@@ -308,8 +313,9 @@ end
 assign fad_m_tready = dec_m_ad_tvalid && dec_m_ad_tready;
 
 always @(posedge clk) begin
-	if (!fad_m_tvalid) begin
+	if (!(fad_m_tvalid && dec_m_ad_tvalid)) begin
 		assume(!dec_m_ad_tready);
+		assume(!fad_m_tready);
 	end
 end
 
@@ -377,10 +383,11 @@ end
 assign fd_m_tready = dec_m_tvalid && dec_m_tready;
 
 always @(posedge clk) begin
-	if (!fad_m_tvalid) begin
+	if (!(fd_m_tvalid && dec_m_tvalid)) begin
 		assume(!dec_m_tready);
+		assume(!fd_m_tready);
 	end
-	if (fad_m_tvalid && dec_m_tvalid) begin
+	if (fd_m_tvalid && dec_m_tvalid) begin
 		assert(fd_m_tlast == dec_m_tlast);
 		assert(fd_m_tdata == dec_m_tdata);
 		assert(fd_m_tkeep == dec_m_tkeep);
