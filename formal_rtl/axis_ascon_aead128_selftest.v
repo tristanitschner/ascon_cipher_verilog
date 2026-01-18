@@ -10,17 +10,17 @@
 module axis_ascon_aead128_selftest #(
 	parameter rounds_per_clk     = 8,
 	parameter keep_support       = 1,
-	parameter input_isolator     = 0,
-	parameter output_isolator    = 0,
-	parameter decouple_pad2core  = 0,
-	// do not change ^ , this testbench cannot handle buffering in the
-	// core, because ordering is not preserved
+	parameter input_isolator     = 1,
+	parameter output_isolator    = 1,
+	parameter decouple_pad2core  = 1,
 	parameter formal_fifo_cmd_aw = 1,
 	parameter formal_fifo_ad_aw  = 1,
 	parameter formal_fifo_d_aw   = 1
 ) (
 	input wire clk
 );
+
+integer i;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -246,8 +246,8 @@ function is_valid_keep(input [15:0] keep, input last);
 					is_valid = is_valid && keep[15-i];
 				end
 			end
+			is_valid_keep = is_valid;
 		end
-		is_valid_keep = is_valid;
 	end
 endfunction
 
@@ -322,7 +322,13 @@ end
 always @(posedge clk) begin
 	if (fad_m_tvalid && dec_m_ad_tvalid) begin
 		assert(fad_m_tlast == dec_m_ad_tlast);
-		assert(fad_m_tdata == dec_m_ad_tdata);
+		for (i = 0; i < 16; i = i + 1) begin
+			if (fad_m_tkeep[i]) begin
+				assert(fad_m_tdata[8*(i+1)-1-:8] == dec_m_ad_tdata[8*(i+1)-1-:8]);
+			end else begin
+				assert(dec_m_ad_tdata[8*(i+1)-1-:8] == 0);
+			end
+		end
 		assert(fad_m_tkeep == dec_m_ad_tkeep);
 	end
 end
@@ -389,7 +395,13 @@ always @(posedge clk) begin
 	end
 	if (fd_m_tvalid && dec_m_tvalid) begin
 		assert(fd_m_tlast == dec_m_tlast);
-		assert(fd_m_tdata == dec_m_tdata);
+		for (i = 0; i < 16; i = i + 1) begin
+			if (fd_m_tkeep[i]) begin
+				assert(fd_m_tdata[8*(i+1)-1-:8] == dec_m_tdata[8*(i+1)-1-:8]);
+			end else begin
+				assert(dec_m_tdata[8*(i+1)-1-:8] == 0);
+			end
+		end
 		assert(fd_m_tkeep == dec_m_tkeep);
 	end
 end
