@@ -112,7 +112,6 @@ end
 
 always @(posedge clk) begin
 	if (m_valid && m_ready) begin
-		(* full_case, parallel_case *)
 		casez (state)
 			4'b1???: begin
 				if (s_ad) begin
@@ -209,8 +208,6 @@ assign m_keep      = extra ? 0          : s_keep;
 assign m_last      = (s_last && !needs_extra_beat) || extra;
 assign m_last_orig = s_last;
 assign m_skip      = extra;
-
-
 
 `ifdef FORMAL
 

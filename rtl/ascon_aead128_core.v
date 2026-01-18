@@ -167,7 +167,6 @@ end
 
 always @(posedge clk) begin
 	if (s_valid && s_ready) begin
-		(* full_case, parallel_case *)
 		casez (state)
 			4'b1???: begin
 				r_first <= 0;
@@ -237,7 +236,6 @@ wire [319:0] ap_m_data_xored2 =
 
 reg [319:0] c_ap_s_data; /* wire */
 always @(*) begin
-	(* full_case, parallel_case *)
 	casez (state)
 		4'b1???: c_ap_s_data = {iv, s_data, s_nonce};
 		4'b?1??: c_ap_s_data = ap_m_data_xored;
