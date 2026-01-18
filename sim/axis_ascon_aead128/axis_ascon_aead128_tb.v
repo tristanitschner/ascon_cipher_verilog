@@ -4,6 +4,7 @@
 module axis_ascon_aead128_tb;
 
 parameter debug_trace = 0;
+parameter debug_text  = 0;
 
 initial begin
     if (debug_trace) begin
@@ -16,14 +17,14 @@ reg clk = 1;
 initial forever #1 clk = !clk;
 
 initial begin
-	// #1000
-	// $finish;
+	#10000000
+	$finish;
 end
 
-parameter rounds_per_clk     = 8;
+parameter rounds_per_clk     = 5;
 parameter keep_support       = 1;
-parameter input_isolator     = 0;
-parameter output_isolator    = 0;
+parameter input_isolator     = 1;
+parameter output_isolator    = 1;
 parameter formal_fifo_cmd_aw = 4;
 parameter formal_fifo_ad_aw  = 4;
 parameter formal_fifo_d_aw   = 4;
@@ -395,7 +396,7 @@ end
 ////////////////////////////////////////////////////////////////////////////////
 // record io data
 
-generate if (debug_trace) begin : dump_io_data
+generate if (debug_text) begin : dump_io_data
 
 	integer s_fp;
 	initial s_fp = $fopen("s_plaintext.txt", "w");
