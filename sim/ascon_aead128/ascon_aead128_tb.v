@@ -31,7 +31,6 @@ wire          s_last;
 wire          s_enc_decn;
 wire [127:0]  s_data;
 wire [kw-1:0] s_keep;
-wire [127:0]  s_key;
 wire [127:0]  s_nonce;
 wire          s_ad;
 wire          s_p;
@@ -57,7 +56,6 @@ ascon_aead128 #(
 	.s_enc_decn (s_enc_decn),
 	.s_data     (s_data),
 	.s_keep     (s_keep),
-	.s_key      (s_key),
 	.s_nonce    (s_nonce),
 	.s_ad       (s_ad),
 	.s_p        (s_p),
@@ -78,7 +76,6 @@ reg          r_s_last     = 0;
 reg          r_s_enc_decn = 0;
 reg [127:0]  r_s_data     = 0;
 reg [kw-1:0] r_s_keep     = 0;
-reg [127:0]  r_s_key      = 0;
 reg [127:0]  r_s_nonce    = 0;
 reg          r_s_ad       = 0;
 reg          r_s_p        = 0;
@@ -89,7 +86,6 @@ always @(posedge clk) begin
 	r_s_enc_decn <= $random;
 	r_s_data     <= $random;
 	r_s_keep     <= $random;
-	r_s_key      <= $random;
 	r_s_nonce    <= $random;
 	r_s_ad       <= $random;
 	r_s_p        <= $random;
@@ -100,7 +96,6 @@ assign s_last     = r_s_last;
 assign s_enc_decn = r_s_enc_decn;
 assign s_data     = r_s_data;
 assign s_keep     = r_s_keep;
-assign s_key      = r_s_key;
 assign s_nonce    = r_s_nonce;
 assign s_ad       = r_s_ad;
 assign s_p        = r_s_p;

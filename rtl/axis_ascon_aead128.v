@@ -244,6 +244,47 @@ ascon_isolator #(
 );
 
 ////////////////////////////////////////////////////////////////////////////////
+// byte swap
+
+wire          sw_m_valid;
+wire          sw_m_ready;
+wire          sw_m_last;
+wire          sw_m_enc_decn;
+wire [127:0]  sw_m_data;
+wire [kw-1:0] sw_m_keep;
+wire [127:0]  sw_m_nonce;
+wire          sw_m_ad;
+wire          sw_m_p;
+
+function [127:0] byteswap128(input [127:0] x);
+	integer i;
+	begin
+		for (i = 0; i < 16; i = i + 1) begin
+			byteswap128[8*(i+1)-1-:8] = x[8*(16-i)-1-:8];
+		end
+	end
+endfunction
+
+function [kw-1:0] bitswap_keep(input [kw-1:0] x);
+	integer i;
+	begin
+		for (i = 0; i < kw; i = i + 1) begin
+			bitswap_keep[i] = x[kw-1-i];
+		end
+	end
+endfunction
+
+assign sw_m_valid       = is_m_valid;
+assign is_m_ready       = sw_m_ready;
+assign sw_m_last        = is_m_last;
+assign sw_m_enc_decn    = is_m_enc_decn;
+assign sw_m_data        = byteswap128(is_m_data);
+assign sw_m_keep        = bitswap_keep(is_m_keep);
+assign sw_m_nonce       = byteswap128(is_m_nonce);
+assign sw_m_ad          = is_m_ad;
+assign sw_m_p           = is_m_p;
+
+////////////////////////////////////////////////////////////////////////////////
 
 wire          aa_m_valid;
 wire          aa_m_ready;
@@ -261,15 +302,15 @@ ascon_aead128 #(
 	.decouple_pad2core (decouple_pad2core)
 ) ascon_aead128_inst1 (
 	.clk        (clk),
-	.s_valid    (is_m_valid),
-	.s_ready    (is_m_ready),
-	.s_last     (is_m_last),
-	.s_enc_decn (is_m_enc_decn),
-	.s_data     (is_m_data),
-	.s_keep     (is_m_keep),
-	.s_nonce    (is_m_nonce),
-	.s_ad       (is_m_ad),
-	.s_p        (is_m_p),
+	.s_valid    (sw_m_valid),
+	.s_ready    (sw_m_ready),
+	.s_last     (sw_m_last),
+	.s_enc_decn (sw_m_enc_decn),
+	.s_data     (sw_m_data),
+	.s_keep     (sw_m_keep),
+	.s_nonce    (sw_m_nonce),
+	.s_ad       (sw_m_ad),
+	.s_p        (sw_m_p),
 	.m_valid    (aa_m_valid),
 	.m_ready    (aa_m_ready),
 	.m_last     (aa_m_last),
@@ -323,6 +364,29 @@ ascon_isolator #(
 );
 
 ////////////////////////////////////////////////////////////////////////////////
+// byte swap back
+
+wire          sw2_m_valid;
+wire          sw2_m_ready;
+wire          sw2_m_last;
+wire          sw2_m_enc_decn;
+wire [127:0]  sw2_m_data;
+wire [kw-1:0] sw2_m_keep;
+wire          sw2_m_ad;
+wire          sw2_m_p;
+wire          sw2_m_t;
+
+assign sw2_m_valid    = i_m_valid;
+assign i_m_ready      = sw2_m_ready;
+assign sw2_m_last     = i_m_last;
+assign sw2_m_enc_decn = i_m_enc_decn;
+assign sw2_m_data     = byteswap128(i_m_data);
+assign sw2_m_keep     = bitswap_keep(i_m_keep);
+assign sw2_m_ad       = i_m_ad;
+assign sw2_m_p        = i_m_p;
+assign sw2_m_t        = i_m_t;
+
+////////////////////////////////////////////////////////////////////////////////
 // don't spill any internal state
 
 function [127:0] mask_data(input [127:0] data, input [kw-1:0] keep);
@@ -337,34 +401,34 @@ function [127:0] mask_data(input [127:0] data, input [kw-1:0] keep);
 	end
 endfunction
 
-wire [127:0] i_m_data_masked = mask_data(i_m_data, i_m_keep);
+wire [127:0] sw2_m_data_masked = mask_data(sw2_m_data, sw2_m_keep);
 
 ////////////////////////////////////////////////////////////////////////////////
 // mux the outputs
 
-assign m_ad_tvalid = i_m_valid && i_m_ad;
-assign m_ad_tdata  = i_m_data_masked;
-assign m_ad_tlast  = i_m_last;
+assign m_ad_tvalid = sw2_m_valid && sw2_m_ad;
+assign m_ad_tdata  = sw2_m_data_masked;
+assign m_ad_tlast  = sw2_m_last;
 
-assign m_tvalid = i_m_valid && i_m_p;
-assign m_tdata  = i_m_data_masked;
-assign m_tlast  = i_m_last;
+assign m_tvalid = sw2_m_valid && sw2_m_p;
+assign m_tdata  = sw2_m_data_masked;
+assign m_tlast  = sw2_m_last;
 
 generate if (keep_support) begin : gen_output_keep_support
-	assign m_ad_tkeep = i_m_keep;
-	assign m_tkeep    = i_m_keep;
+	assign m_ad_tkeep = sw2_m_keep;
+	assign m_tkeep    = sw2_m_keep;
 end else begin : gen_no_output_keep_supportr
 	assign m_ad_tkeep = 16'b1111_1111_1111_1111;
 	assign m_tkeep    = 16'b1111_1111_1111_1111;
 end endgenerate
 
-assign m_tag_tvalid = i_m_valid && i_m_t;
-assign m_tag_tdata  = i_m_data_masked;
+assign m_tag_tvalid = sw2_m_valid && sw2_m_t;
+assign m_tag_tdata  = sw2_m_data_masked;
 
-assign i_m_ready = 
-	i_m_ad ?    m_ad_tready :
-	i_m_p  ?    m_tready    :
-     /* i_m_t  ? */ m_tag_tready;
+assign sw2_m_ready = 
+	sw2_m_ad ?    m_ad_tready :
+	sw2_m_p  ?    m_tready    :
+     /* sw2_m_t  ? */ m_tag_tready;
 
 ////////////////////////////////////////////////////////////////////////////////
 

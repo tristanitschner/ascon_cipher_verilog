@@ -1,8 +1,3 @@
-IMPORTANT:
-
-* The endianess of all inputs of the IP needs to be swapped. Just noticed this.
-  Will fix asap.
-
 Ascon Cipher Verilog Implementation
 ===================================
 

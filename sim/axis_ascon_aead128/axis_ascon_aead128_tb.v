@@ -4,7 +4,7 @@
 module axis_ascon_aead128_tb;
 
 parameter debug_trace = 0;
-parameter debug_text  = 0;
+parameter debug_text  = 1;
 
 initial begin
     if (debug_trace) begin
@@ -208,15 +208,15 @@ function [15:0] make_valid_keep(input [15:0] keep);
 	integer i;
 	begin
 		found = 0;
-		make_valid_keep = 1;
+		make_valid_keep = 1 << 15;
 		for (i = 0; i < 16; i = i + 1) begin
 			if (!found) begin
-				if (keep[15-i]) begin
+				if (keep[i]) begin
 					found = 1;
-					make_valid_keep[15-i] = 1;
+					make_valid_keep[i] = 1;
 				end
 			end else begin
-				make_valid_keep[15-i] = 1;
+				make_valid_keep[i] = 1;
 			end
 
 		end

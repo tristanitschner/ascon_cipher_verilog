@@ -3,6 +3,9 @@ SRC += ascon_aead128_tb.v
 SRC += ../../rtl/ascon_aead128_core.v
 SRC += ../../rtl/ascon_aead128.v
 SRC += ../../rtl/ascon_pad.v
+SRC += ../../rtl/ascon_isolator.v
+SRC += ../../rtl/ascon_regslice.v
+SRC += ../../rtl/ascon_skidbuffer.v
 SRC += ../../rtl/ascon_p.v
 SRC += ../../rtl/ascon_round.v
 
