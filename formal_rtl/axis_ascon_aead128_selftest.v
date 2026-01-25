@@ -239,11 +239,11 @@ function is_valid_keep(input [15:0] keep, input last);
 		end else begin
 			for (i = 0; i < 16; i = i + 1) begin
 				if (!first_one_found) begin
-					if (keep[i]) begin
+					if (keep[15-i]) begin
 						first_one_found = 1;
 					end
 				end else begin
-					is_valid = is_valid && keep[i];
+					is_valid = is_valid && keep[15-i];
 				end
 			end
 			is_valid_keep = is_valid;
