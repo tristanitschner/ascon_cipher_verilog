@@ -1,8 +1,10 @@
 Ascon Cipher Verilog Implementation
 ===================================
 
-A Verilog implementation of the Ascon AEAD 128a cipher as implemented in
-[ascon-c](https://github.com/ascon/ascon-c).
+A Verilog implementation of the Ascon AEAD 128 cipher as implemented in
+[ascon-c](https://github.com/ascon/ascon-c) / NIST SP 800-232. (Please see
+`assets/` directory for actual testvectors, compare / test these, to make sure
+compat with other implementations.)
 
 Features:
 
